@@ -8,9 +8,11 @@ from configparser import ConfigParser
 
 devices = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
 
-
 class ICSE0XXADevice:
     """Class for controlling ICSE0XXA device"""
+
+    ID_COMMAND = bytes([0x50])
+    READY_COMMAND = bytes([0x51])
 
     # State of device initializing
     initialized = False
@@ -32,11 +34,14 @@ class ICSE0XXADevice:
     def info(self):
         return "{}@{} with {} relays".format(devices[self._id], self._port, self.relays_count())
 
-    def switch_relay(relay_num, enable):
+    def switch_relay(self, relay_num, enable):
         """Switching relay on device
-        relay_num - Number of relay
+        :arg relay_num - Number of relay
         :arg enable - switch state True - ON, False - OFF """
-        pass
+
+        if relay_num > 7: raise Exception("Relay num mast be less than 8")
+        self._connection.write(bytes([int(enable)<<relay_num]))
+
 
     def init_device(self):
         """Turn device to listening mode
@@ -45,7 +50,7 @@ class ICSE0XXADevice:
         For disable listening mode need turn off or reset device!
         :return Result of initialize (bool)
         """
-        l_mode_c = bytes([0x51])
+
         self.initialized = False
 
         self._connection = Serial()
@@ -53,27 +58,43 @@ class ICSE0XXADevice:
         self._connection.timeout = 1
         try:
             self._connection.open()
-            self.initialized = (self._connection.write(l_mode_c) > 0)
+            self._connection.write(ICSE0XXADevice.ID_COMMAND)
+            time.sleep(0.5)
+            self._connection.write(ICSE0XXADevice.READY_COMMAND)
+            self._connection.close()
+            time.sleep(0.5)
+            self._connection.open()
+            time.sleep(0.5)
         except SerialException:
             _eprint("ICSE0XXADevice.init_device(): Error open port {}".format(self._port))
+            return self.initialized
         except SerialTimeoutException:
             _eprint("ICSE0XXADevice.init_device(): Error write to port {}".format(self._port))
-        finally:
-            self._connection.close()
+            return self.initialized
+
+        # no errors - good
+        self.initialized = True
         return self.initialized
 
 
 def load_devices_from_config(file="icse0xxa.conf"):
     """Load ICSE0XXA devices from config file
-    :return:  dev_list[ICSE0XXADevice, ...]"""
+    :return: dev_list[ICSE0XXADevice, ...]"""
+
+    MAIN_SECTION = "devices"
+
     dev_list = []
     config = ConfigParser()
-    config.read_file(file)
+    config.read(file)
+    if not MAIN_SECTION in config.sections(): return dev_list
+    for k in config[MAIN_SECTION]:
+        dev_list.append(ICSE0XXADevice(k, int(config[MAIN_SECTION][k], 16)))
+    return dev_list
+
 
 def find_devices():
     """Find ICSE0XXA devices on ports
     :return: dev_list[ICSE0XXADevice, ...]"""
-    id_c = bytearray([0x50])
     dev_list = []
     for port in list_ports.comports():
         p = Serial()
@@ -85,7 +106,7 @@ def find_devices():
             _eprint("find_devices(): Error in open {} port".format(p.port))
             continue
         try:
-            p.write(id_c)
+            p.write(ICSE0XXADevice.ID_COMMAND)
             time.sleep(0.5)
             answer = p.read()
             if (len(answer) > 0) and (answer[0] in devices.keys()):
@@ -102,7 +123,6 @@ def _eprint(err):
 
 
 if __name__ == "__main__":
-
     #dev_list = find_devices()
     dev_list = load_devices_from_config()
     print("Finded {} device(s)".format(len(dev_list)))
@@ -111,3 +131,5 @@ if __name__ == "__main__":
     d = dev_list[0]
     if d.init_device():
         print("Device {} initialized successfully".format(d.info()))
+    d.switch_relay(2, True)
+    input()
