@@ -37,11 +37,11 @@ class ICSE0XXADevice:
     def switch_relay(self, relay_num, enable):
         """Switching relay on device
         :arg relay_num - Number of relay
-        :arg enable - switch state True - ON, False - OFF """
+        :arg enable - Switch state True - ON, False - OFF """
 
-        if relay_num > 7: raise Exception("Relay num mast be less than 8")
+        if relay_num > self._relays[self._id]:
+            raise Exception("Relay num mast be less than {}".format(self._relays[self._id]))
         self._connection.write(bytes([int(enable)<<relay_num]))
-
 
     def init_device(self):
         """Turn device to listening mode
@@ -131,5 +131,5 @@ if __name__ == "__main__":
     d = dev_list[0]
     if d.init_device():
         print("Device {} initialized successfully".format(d.info()))
-    d.switch_relay(2, True)
+    d.switch_relay(8, True)
     input()
