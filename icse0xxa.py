@@ -7,6 +7,7 @@ from serial.tools import list_ports
 from configparser import ConfigParser
 
 devices = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
+MAIN_CFG_SECTION = "devices"
 
 class ICSE0XXADevice:
     """Class for controlling ICSE0XXA device"""
@@ -25,29 +26,42 @@ class ICSE0XXADevice:
     _relays = {0xAB: 4, 0xAD: 2, 0xAC: 8}
 
     def __init__(self, port, id):
+        """Create ICSE0XXADevice object
+        :arg port  Device port
+        :arg id  Device id"""
+
         super().__init__()
         self._port = port
         self._id = id
+
+    def __del__(self):
+        if self._connection != None: self._connection.close()
 
     def relays_count(self):
         return self._relays[self._id]
 
     def info(self):
+        if not self._id in devices: raise Exception("Unknow_device id:0x{:X}".format(self._id))
         return "{}@{} with {} relays".format(devices[self._id], self._port, self.relays_count())
+
+
+    def port(self): return self._port
+    def id(self): return self._id
 
     def switch_relay(self, relay_num, enable):
         """Switching relay on device
-        :arg relay_num - Number of relay
-        :arg enable - Switch state True - ON, False - OFF
+        :arg relay_num  Number of relay
+        :arg enable Switch state True - ON, False - OFF
         NOTICE:
         ON - diode on PCB is off, OFF - diodes lights!"""
-
+        if not self.initialized: raise Exception("Device not initialized. Initialize first.")
         if relay_num >= self._relays[self._id]:
             raise Exception("Relay num mast be less than {}".format(self._relays[self._id]))
         if enable:
             self._relays_register = self._relays_register | (1 << relay_num)
         else:
             self._relays_register = self._relays_register & ~(1 << relay_num)
+        time.sleep(0.01)
         self._connection.write(bytes([self._relays_register]))
 
     def init_device(self):
@@ -57,6 +71,7 @@ class ICSE0XXADevice:
         For disable listening mode need turn off or reset device!
         :return Result of initialize (bool)
         """
+        if not self._id in devices: raise Exception("Unknow_device id:0x{:X}".format(self._id))
         self.initialized = False
         self._connection = Serial()
         self._connection.port = self._port
@@ -86,15 +101,21 @@ def load_devices_from_config(file="icse0xxa.conf"):
     """Load ICSE0XXA devices from config file
     :return: dev_list[ICSE0XXADevice, ...]"""
 
-    MAIN_SECTION = "devices"
-
     dev_list = []
     config = ConfigParser()
     config.read(file)
-    if not MAIN_SECTION in config.sections(): return dev_list
-    for k in config[MAIN_SECTION]:
-        dev_list.append(ICSE0XXADevice(k, int(config[MAIN_SECTION][k], 16)))
+    if not MAIN_CFG_SECTION in config.sections(): return dev_list
+    for k in config[MAIN_CFG_SECTION]:
+        dev_list.append(ICSE0XXADevice(k, int(config[MAIN_CFG_SECTION][k], 16)))
     return dev_list
+
+def save_divices_to_config(dev_list, file="icse0xxa.conf"):
+    c = ConfigParser()
+    c.read(file)
+    c[MAIN_CFG_SECTION] = {}
+    for d in dev_list:
+        c[MAIN_CFG_SECTION][d.port()] = hex(d.id())
+    c.write(open(file, "a"))
 
 
 def find_devices():
@@ -128,13 +149,36 @@ def _eprint(err):
 
 
 if __name__ == "__main__":
-    #dev_list = find_devices()
     _dev_list = load_devices_from_config()
+    if len(_dev_list) == 0:
+        print("No devices in config file, try autosearch device on serial ports")
+        _dev_list = find_devices()
+
+        if len(_dev_list) == 0:
+            print("No device(s) finded on serial ports. " \
+                  "If device connected - try reset him")
+            sys.exit(1)
+        else:
+            # Save devices in config
+            save_divices_to_config(_dev_list)
+
+
     print("Finded {} device(s)".format(len(_dev_list)))
     for _d in _dev_list: print(_d.info())
 
     _d = _dev_list[0]
     if _d.init_device():
-        print("Device {} initialized successfully".format(_d.info().upper()))
+        print("Device {} initialized".format(_d.info()))
+    else:
+        print("Can't init device: {}".format(_d.info()))
+        sys.exit(1)
+
+    while True:
+        r = input("Try switch relay, format: [numstate], where num - num of relay, state - switch state[0/1]:")
+        #try:
+        n, s = r[0], r[1]
+        _d.switch_relay(int(n), bool(int(s)))
+    #except Exception
+        print("Error input format, try again...")
 
     input()
