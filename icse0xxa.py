@@ -20,6 +20,7 @@ class ICSE0XXADevice:
     _port = None
     _id = None
     _connection = None
+    _relays_register = 0
 
     _relays = {0xAB: 4, 0xAD: 2, 0xAC: 8}
 
@@ -37,11 +38,17 @@ class ICSE0XXADevice:
     def switch_relay(self, relay_num, enable):
         """Switching relay on device
         :arg relay_num - Number of relay
-        :arg enable - Switch state True - ON, False - OFF """
+        :arg enable - Switch state True - ON, False - OFF
+        NOTICE:
+        ON - diode on PCB is off, OFF - diodes lights!"""
 
-        if relay_num > self._relays[self._id]:
+        if relay_num >= self._relays[self._id]:
             raise Exception("Relay num mast be less than {}".format(self._relays[self._id]))
-        self._connection.write(bytes([int(enable)<<relay_num]))
+        if enable:
+            self._relays_register = self._relays_register | (1 << relay_num)
+        else:
+            self._relays_register = self._relays_register & ~(1 << relay_num)
+        self._connection.write(bytes([self._relays_register]))
 
     def init_device(self):
         """Turn device to listening mode
@@ -50,9 +57,7 @@ class ICSE0XXADevice:
         For disable listening mode need turn off or reset device!
         :return Result of initialize (bool)
         """
-
         self.initialized = False
-
         self._connection = Serial()
         self._connection.port = self._port
         self._connection.timeout = 1
@@ -65,11 +70,11 @@ class ICSE0XXADevice:
             time.sleep(0.5)
             self._connection.open()
             time.sleep(0.5)
-        except SerialException:
-            _eprint("ICSE0XXADevice.init_device(): Error open port {}".format(self._port))
-            return self.initialized
         except SerialTimeoutException:
             _eprint("ICSE0XXADevice.init_device(): Error write to port {}".format(self._port))
+            return self.initialized
+        except SerialException:
+            _eprint("ICSE0XXADevice.init_device(): Error open port {}".format(self._port))
             return self.initialized
 
         # no errors - good
@@ -124,12 +129,12 @@ def _eprint(err):
 
 if __name__ == "__main__":
     #dev_list = find_devices()
-    dev_list = load_devices_from_config()
-    print("Finded {} device(s)".format(len(dev_list)))
-    for d in dev_list: print(d.info())
+    _dev_list = load_devices_from_config()
+    print("Finded {} device(s)".format(len(_dev_list)))
+    for _d in _dev_list: print(_d.info())
 
-    d = dev_list[0]
-    if d.init_device():
-        print("Device {} initialized successfully".format(d.info()))
-    d.switch_relay(8, True)
+    _d = _dev_list[0]
+    if _d.init_device():
+        print("Device {} initialized successfully".format(_d.info().upper()))
+
     input()
