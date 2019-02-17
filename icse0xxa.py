@@ -9,6 +9,9 @@ from configparser import ConfigParser
 devices = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
 MAIN_CFG_SECTION = "devices"
 
+# Error log file, set for logging icse0xxa errors
+err_file = None
+
 class ICSE0XXADevice:
     """Class for controlling ICSE0XXA device"""
 
@@ -38,15 +41,21 @@ class ICSE0XXADevice:
         if self._connection != None: self._connection.close()
 
     def relays_count(self):
+        self._chek_init()
         return self._relays[self._id]
 
     def info(self):
-        if not self._id in devices: raise Exception("Unknow_device id:0x{:X}".format(self._id))
+        self._chek_init()
         return "{}@{} with {} relays".format(devices[self._id], self._port, self.relays_count())
 
 
     def port(self): return self._port
     def id(self): return self._id
+
+    def name(self):
+        if self._id in devices:
+            return "{}@{}".format(devices[self._id], self._port)
+        else: return "Unknown_Device@{}".format(self.port())
 
     def switch_relay(self, relay_num, enable):
         """Switching relay on device
@@ -54,8 +63,8 @@ class ICSE0XXADevice:
         :arg enable Switch state True - ON, False - OFF
         NOTICE:
         ON - diode on PCB is off, OFF - diodes lights!"""
-        if not self.initialized: raise Exception("Device not initialized. Initialize first.")
-        if relay_num >= self._relays[self._id]:
+        self._chek_init()
+        if relay_num >= self.relays_count():
             raise Exception("Relay num mast be less than {}".format(self._relays[self._id]))
         if enable:
             self._relays_register = self._relays_register | (1 << relay_num)
@@ -70,8 +79,8 @@ class ICSE0XXADevice:
         In listening mode device not responding for identification
         For disable listening mode need turn off or reset device!
         :return Result of initialize (bool)
+        :except SerialTimeoutException, SerialException
         """
-        if not self._id in devices: raise Exception("Unknow_device id:0x{:X}".format(self._id))
         self.initialized = False
         self._connection = Serial()
         self._connection.port = self._port
@@ -85,16 +94,19 @@ class ICSE0XXADevice:
             time.sleep(0.5)
             self._connection.open()
             time.sleep(0.5)
-        except SerialTimeoutException:
-            _eprint("ICSE0XXADevice.init_device(): Error write to port {}".format(self._port))
-            return self.initialized
-        except SerialException:
-            _eprint("ICSE0XXADevice.init_device(): Error open port {}".format(self._port))
+        except Exception as e:
+            icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e))
             return self.initialized
 
         # no errors - good
         self.initialized = True
         return self.initialized
+
+    def _chek_init(self):
+        if not self._id in devices:
+            raise Exception("Unknow_device: {}".format(self.name()))
+        if not self.initialized:
+            raise Exception("Device {} not initialized.".format(self.name()))
 
 
 def load_devices_from_config(file="icse0xxa.conf"):
@@ -102,20 +114,22 @@ def load_devices_from_config(file="icse0xxa.conf"):
     :return: dev_list[ICSE0XXADevice, ...]"""
 
     dev_list = []
-    config = ConfigParser()
-    config.read(file)
-    if not MAIN_CFG_SECTION in config.sections(): return dev_list
-    for k in config[MAIN_CFG_SECTION]:
-        dev_list.append(ICSE0XXADevice(k, int(config[MAIN_CFG_SECTION][k], 16)))
+    c = ConfigParser()
+    c.optionxform = str
+    c.read(file)
+    if not MAIN_CFG_SECTION in c.sections(): return dev_list
+    for k in c[MAIN_CFG_SECTION]:
+        dev_list.append(ICSE0XXADevice(k, int(c[MAIN_CFG_SECTION][k], 16)))
     return dev_list
 
 def save_divices_to_config(dev_list, file="icse0xxa.conf"):
     c = ConfigParser()
+    c.optionxform = str
     c.read(file)
     c[MAIN_CFG_SECTION] = {}
     for d in dev_list:
         c[MAIN_CFG_SECTION][d.port()] = hex(d.id())
-    c.write(open(file, "a"))
+    c.write(open(file, "w"))
 
 
 def find_devices():
@@ -128,27 +142,34 @@ def find_devices():
         p.timeout = 1
         try:
             p.open()
-        except SerialException:
-            _eprint("find_devices(): Error in open {} port".format(p.port))
+        except SerialException as e:
+            icse0xxa_eprint("find_devices(): {}".format(e))
             continue
         try:
+            time.sleep(0.5)
             p.write(ICSE0XXADevice.ID_COMMAND)
             time.sleep(0.5)
-            answer = p.read()
-            if (len(answer) > 0) and (answer[0] in devices.keys()):
+            answer = p.read(1)
+            if (len(answer) > 0) and (answer[0] in devices):
                 dev_list.append(ICSE0XXADevice(p.port, answer[0]))
-        except SerialTimeoutException:
-            _eprint("find_devices(): Read/Write timeout on {}".format(p.port))
+        except SerialTimeoutException as e:
+            icse0xxa_eprint("find_devices(): {}".format(e))
         finally:
             p.close()
     return dev_list
 
 
-def _eprint(err):
+def icse0xxa_eprint(err):
     print(err, file=sys.stderr)
+    if err_file:
+        print("{} ERR: {}".format(time.asctime(), err), file=err_file)
 
 
-if __name__ == "__main__":
+def test():
+    # Set error file, for simply logging
+    global err_file
+    err_file = open(file="ICSE0XXA.errors", mode="a", encoding="windows-1251")
+
     _dev_list = load_devices_from_config()
     if len(_dev_list) == 0:
         print("No devices in config file, try autosearch device on serial ports")
@@ -162,23 +183,26 @@ if __name__ == "__main__":
             # Save devices in config
             save_divices_to_config(_dev_list)
 
-
-    print("Finded {} device(s)".format(len(_dev_list)))
-    for _d in _dev_list: print(_d.info())
-
     _d = _dev_list[0]
     if _d.init_device():
         print("Device {} initialized".format(_d.info()))
     else:
-        print("Can't init device: {}".format(_d.info()))
+        print("Can't init device: {}".format(_d.name()))
         sys.exit(1)
+
+    print("Finded {} device(s)".format(len(_dev_list)))
+    for _d in _dev_list: print(_d.info())
 
     while True:
         r = input("Try switch relay, format: [numstate], where num - num of relay, state - switch state[0/1]:")
-        #try:
-        n, s = r[0], r[1]
-        _d.switch_relay(int(n), bool(int(s)))
-    #except Exception
-        print("Error input format, try again...")
+        try:
+            if r == "": sys.exit(0)
+            n, s = r[0], r[1]
+            _d.switch_relay(int(n), bool(int(s)))
+        except Exception as ex:
+            print("Error input format, try again...", )
 
-    input()
+if __name__ == "__main__":
+    test()
+
+
