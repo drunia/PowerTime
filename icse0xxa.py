@@ -9,6 +9,7 @@ from configparser import ConfigParser
 # Error log file, set for logging icse0xxa errors
 icse0xxa_err_file = None
 
+
 class ICSE0XXADevice:
     """Class for controlling ICSE0XXA device"""
 
@@ -19,16 +20,15 @@ class ICSE0XXADevice:
     # Name of main device config section
     MAIN_CFG_SECTION = "devices"
     # Known device types
-    DEVICES = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
+    MODELS = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
 
-
-    _initialized = False
-    _port = None
-    _id = None
-    _connection = None
-    _relays_register = 0
+    __initialized = False
+    __port = None
+    __id = None
+    __connection = None
+    __relays_register = 0
     # Relays count by device id
-    _relays = {0xAB: 4, 0xAD: 2, 0xAC: 8}
+    __relays = {0xAB: 4, 0xAD: 2, 0xAC: 8}
 
     def __init__(self, port, id):
         """Create ICSE0XXADevice object
@@ -36,28 +36,27 @@ class ICSE0XXADevice:
         :arg id  Device id"""
 
         super().__init__()
-        self._port = port
-        self._id = id
-        self.initialized = True
+        self.__port = port
+        self.__id = id
 
     def __del__(self):
-        if self._connection != None: self._connection.close()
+        if self.__connection != None: self.__connection.close()
 
     def relays_count(self):
-        self._chek_init()
-        return self._relays[self._id]
+        self.__chek_init()
+        return self.__relays[self.__id]
 
     def info(self):
-        self._chek_init()
+        self.__chek_init()
         return "{} with {} relays".format(self.name(), self.relays_count())
 
 
-    def port(self): return self._port
-    def id(self): return self._id
+    def port(self): return self.__port
+    def id(self): return self.__id
 
     def name(self):
-        if self._id in ICSE0XXADevice.DEVICES:
-            return "{}@{}".format(ICSE0XXADevice.DEVICES[self._id], self._port)
+        if self.__id in ICSE0XXADevice.MODELS:
+            return "{}@{}".format(ICSE0XXADevice.MODELS[self.__id], self.__port)
         else: return "Unknown_Device@{}".format(self.port())
 
     def switch_relay(self, relay_num, enable):
@@ -66,15 +65,15 @@ class ICSE0XXADevice:
         :arg enable Switch state True - ON, False - OFF
         NOTICE:
         ON - diode on PCB is off, OFF - diodes lights!"""
-        self._chek_init()
+        self.__chek_init()
         if relay_num >= self.relays_count():
-            raise Exception("Relay num mast be less than {}".format(self._relays[self._id]))
+            raise Exception("Relay num mast be less than {}".format(self.__relays[self.__id]))
         if enable:
-            self._relays_register = self._relays_register | (1 << relay_num)
+            self.__relays_register = self.__relays_register | (1 << relay_num)
         else:
-            self._relays_register = self._relays_register & ~(1 << relay_num)
+            self.__relays_register = self.__relays_register & ~(1 << relay_num)
         time.sleep(0.01)
-        self._connection.write(bytes([self._relays_register]))
+        self.__connection.write(bytes([self.__relays_register]))
 
     def init_device(self):
         """Turn device to listening mode
@@ -82,34 +81,37 @@ class ICSE0XXADevice:
         In listening mode device not responding for identification
         For disable listening mode need turn off or reset device!
         :return Result of initialize (bool)
-        :except SerialTimeoutException, SerialException
-        """
-        self._initialized = False
-        self._connection = Serial()
-        self._connection.port = self._port
-        self._connection.timeout = 1
+        :except SerialTimeoutException, SerialException"""
+        self.__initialized = False
+        self.__connection = Serial()
+        self.__connection.port = self.__port
+        self.__connection.timeout = 1
         try:
-            self._connection.open()
-            self._connection.write(ICSE0XXADevice.ID_COMMAND)
+            self.__connection.open()
+            self.__connection.write(ICSE0XXADevice.ID_COMMAND)
             time.sleep(0.5)
-            self._connection.write(ICSE0XXADevice.READY_COMMAND)
-            self._connection.close()
+            self.__connection.write(ICSE0XXADevice.READY_COMMAND)
+            self.__connection.close()
             time.sleep(0.5)
-            self._connection.open()
+            self.__connection.open()
             time.sleep(0.5)
         except Exception as e:
             icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e))
-            return self._initialized
+            return self.__initialized
 
         # no errors - good
-        self._initialized = True
-        return self._initialized
+        self.__initialized = True
+        return self.__initialized
 
-    def _chek_init(self):
-        if not self._id in ICSE0XXADevice.DEVICES:
+    def __chek_init(self):
+        if not self.__id in ICSE0XXADevice.MODELS:
             raise Exception("Unknow_device: {}".format(self.name()))
-        if not self._initialized:
+        if not self.__initialized:
             raise Exception("Device {} not initialized.".format(self.name()))
+
+    def __str__(self):
+        return self.name()
+
 
 
 def load_devices_from_config(file="icse0xxa.conf"):
@@ -153,13 +155,14 @@ def find_devices():
             p.write(ICSE0XXADevice.ID_COMMAND)
             time.sleep(0.5)
             answer = p.read(1)
-            if (len(answer) > 0) and (answer[0] in ICSE0XXADevice.DEVICES):
+            if (len(answer) > 0) and (answer[0] in ICSE0XXADevice.MODELS):
                 dev_list.append(ICSE0XXADevice(p.port, answer[0]))
         except SerialTimeoutException as e:
             icse0xxa_eprint("find_devices(): {}".format(e))
         finally:
             p.close()
     return dev_list
+
 
 
 def icse0xxa_eprint(err):
@@ -207,5 +210,4 @@ def test():
 
 if __name__ == "__main__":
     test()
-
 
