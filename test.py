@@ -6,5 +6,3 @@ import icse0xxa
 dev = icse0xxa.ICSE0XXADevice("COM2", 0xAB)
 
 
-print(icse0xxa.ICSE0XXADevice._initialized)
-

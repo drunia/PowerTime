@@ -6,24 +6,28 @@ from serial import Serial, SerialException, SerialTimeoutException
 from serial.tools import list_ports
 from configparser import ConfigParser
 
-devices = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
-MAIN_CFG_SECTION = "devices"
-
 # Error log file, set for logging icse0xxa errors
-err_file = None
+icse0xxa_err_file = None
 
 class ICSE0XXADevice:
     """Class for controlling ICSE0XXA device"""
 
+    # Command for identification device
     ID_COMMAND = bytes([0x50])
+    # Command for switching device to listening mode
     READY_COMMAND = bytes([0x51])
+    # Name of main device config section
+    MAIN_CFG_SECTION = "devices"
+    # Known device types
+    DEVICES = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
+
 
     _initialized = False
     _port = None
     _id = None
     _connection = None
     _relays_register = 0
-
+    # Relays count by device id
     _relays = {0xAB: 4, 0xAD: 2, 0xAC: 8}
 
     def __init__(self, port, id):
@@ -34,6 +38,7 @@ class ICSE0XXADevice:
         super().__init__()
         self._port = port
         self._id = id
+        self.initialized = True
 
     def __del__(self):
         if self._connection != None: self._connection.close()
@@ -51,8 +56,8 @@ class ICSE0XXADevice:
     def id(self): return self._id
 
     def name(self):
-        if self._id in devices:
-            return "{}@{}".format(devices[self._id], self._port)
+        if self._id in ICSE0XXADevice.DEVICES:
+            return "{}@{}".format(ICSE0XXADevice.DEVICES[self._id], self._port)
         else: return "Unknown_Device@{}".format(self.port())
 
     def switch_relay(self, relay_num, enable):
@@ -101,7 +106,7 @@ class ICSE0XXADevice:
         return self._initialized
 
     def _chek_init(self):
-        if not self._id in devices:
+        if not self._id in ICSE0XXADevice.DEVICES:
             raise Exception("Unknow_device: {}".format(self.name()))
         if not self._initialized:
             raise Exception("Device {} not initialized.".format(self.name()))
@@ -109,30 +114,30 @@ class ICSE0XXADevice:
 
 def load_devices_from_config(file="icse0xxa.conf"):
     """Load ICSE0XXA devices from config file
-    :return: dev_list[ICSE0XXADevice, ...]"""
-
+    :return: dev_list[ICSE0XXADevice, ...]
+    Returned objects device not initialized!"""
     dev_list = []
     c = ConfigParser()
     c.optionxform = str
     c.read(file)
-    if not MAIN_CFG_SECTION in c.sections(): return dev_list
-    for k in c[MAIN_CFG_SECTION]:
-        dev_list.append(ICSE0XXADevice(k, int(c[MAIN_CFG_SECTION][k], 16)))
+    if not ICSE0XXADevice.MAIN_CFG_SECTION in c.sections(): return dev_list
+    for k in c[ICSE0XXADevice.MAIN_CFG_SECTION]:
+        dev_list.append(ICSE0XXADevice(k, int(c[ICSE0XXADevice.MAIN_CFG_SECTION][k], 16)))
     return dev_list
 
 def save_divices_to_config(dev_list, file="icse0xxa.conf"):
     c = ConfigParser()
     c.optionxform = str
     c.read(file)
-    c[MAIN_CFG_SECTION] = {}
+    c[ICSE0XXADevice.MAIN_CFG_SECTION] = {}
     for d in dev_list:
-        c[MAIN_CFG_SECTION][d.port()] = hex(d.id())
+        c[ICSE0XXADevice.MAIN_CFG_SECTION][d.port()] = hex(d.id())
     c.write(open(file, "w"))
-
 
 def find_devices():
     """Find ICSE0XXA devices on ports
-    :return: dev_list[ICSE0XXADevice, ...]"""
+    :return: dev_list[ICSE0XXADevice, ...]
+    Returned objects device not initialized!"""
     dev_list = []
     for port in list_ports.comports():
         p = Serial()
@@ -148,7 +153,7 @@ def find_devices():
             p.write(ICSE0XXADevice.ID_COMMAND)
             time.sleep(0.5)
             answer = p.read(1)
-            if (len(answer) > 0) and (answer[0] in devices):
+            if (len(answer) > 0) and (answer[0] in ICSE0XXADevice.DEVICES):
                 dev_list.append(ICSE0XXADevice(p.port, answer[0]))
         except SerialTimeoutException as e:
             icse0xxa_eprint("find_devices(): {}".format(e))
@@ -159,14 +164,14 @@ def find_devices():
 
 def icse0xxa_eprint(err):
     print(err, file=sys.stderr)
-    if err_file:
-        print("{} ERR: {}".format(time.asctime(), err), file=err_file)
+    if icse0xxa_err_file:
+        print("{} ERR: {}".format(time.asctime(), err), file=icse0xxa_err_file)
 
 
 def test():
     # Set error file, for simply logging
-    global err_file
-    err_file = open(file="ICSE0XXA.errors", mode="a", encoding="windows-1251")
+    global icse0xxa_err_file
+    icse0xxa_err_file = open(file="ICSE0XXA.errors", mode="a", encoding="windows-1251")
 
     _dev_list = load_devices_from_config()
     if len(_dev_list) == 0:
