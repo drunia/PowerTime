@@ -3,6 +3,8 @@
 
 import icse0xxa
 
+dev = icse0xxa.ICSE0XXADevice("COM2", 0xAB)
 
-print(help(icse0xxa))
+
+print(icse0xxa.ICSE0XXADevice._initialized)
 

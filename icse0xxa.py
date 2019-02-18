@@ -18,9 +18,7 @@ class ICSE0XXADevice:
     ID_COMMAND = bytes([0x50])
     READY_COMMAND = bytes([0x51])
 
-    # State of device initializing
-    initialized = False
-
+    _initialized = False
     _port = None
     _id = None
     _connection = None
@@ -46,7 +44,7 @@ class ICSE0XXADevice:
 
     def info(self):
         self._chek_init()
-        return "{}@{} with {} relays".format(devices[self._id], self._port, self.relays_count())
+        return "{} with {} relays".format(self.name(), self.relays_count())
 
 
     def port(self): return self._port
@@ -81,7 +79,7 @@ class ICSE0XXADevice:
         :return Result of initialize (bool)
         :except SerialTimeoutException, SerialException
         """
-        self.initialized = False
+        self._initialized = False
         self._connection = Serial()
         self._connection.port = self._port
         self._connection.timeout = 1
@@ -96,16 +94,16 @@ class ICSE0XXADevice:
             time.sleep(0.5)
         except Exception as e:
             icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e))
-            return self.initialized
+            return self._initialized
 
         # no errors - good
-        self.initialized = True
-        return self.initialized
+        self._initialized = True
+        return self._initialized
 
     def _chek_init(self):
         if not self._id in devices:
             raise Exception("Unknow_device: {}".format(self.name()))
-        if not self.initialized:
+        if not self._initialized:
             raise Exception("Device {} not initialized.".format(self.name()))
 
 
