@@ -75,7 +75,7 @@ class ICSE0XXADevice:
         time.sleep(0.01)
         self.__connection.write(bytes([self.__relays_register]))
 
-    def init_device(self):
+    def init_device(self, full_init=True):
         """Turn device to listening mode
         NOTICE:
         In listening mode device not responding for identification
@@ -87,21 +87,20 @@ class ICSE0XXADevice:
         self.__connection.port = self.__port
         self.__connection.timeout = 1
         try:
-            self.__connection.open()
-            self.__connection.write(ICSE0XXADevice.ID_COMMAND)
-            time.sleep(0.5)
-            self.__connection.write(ICSE0XXADevice.READY_COMMAND)
-            self.__connection.close()
-            time.sleep(0.5)
+            if full_init:
+                self.__connection.open()
+                self.__connection.write(ICSE0XXADevice.ID_COMMAND)
+                time.sleep(0.5)
+                self.__connection.write(ICSE0XXADevice.READY_COMMAND)
+                self.__connection.close()
+                time.sleep(0.5)
             self.__connection.open()
             time.sleep(0.5)
         except Exception as e:
             icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e))
-            return self.__initialized
-
+            raise e
         # no errors - good
         self.__initialized = True
-        return self.__initialized
 
     def __chek_init(self):
         if not self.__id in ICSE0XXADevice.MODELS:
@@ -111,7 +110,6 @@ class ICSE0XXADevice:
 
     def __str__(self):
         return self.name()
-
 
 
 def load_devices_from_config(file="icse0xxa.conf"):
@@ -174,7 +172,7 @@ def icse0xxa_eprint(err):
 def test():
     # Set error file, for simply logging
     global icse0xxa_err_file
-    icse0xxa_err_file = open(file="ICSE0XXA.errors", mode="a", encoding="windows-1251")
+    icse0xxa_err_file = open(file="ICSE0XXA.errors", mode="a", encoding="utf8")
 
     _dev_list = load_devices_from_config()
     if len(_dev_list) == 0:
@@ -188,16 +186,15 @@ def test():
         else:
             # Save devices in config
             save_divices_to_config(_dev_list)
+            print("Finded {} device(s)".format(len(_dev_list)))
+    else: print("Loaded {} device(s)".format(len(_dev_list)))
 
     _d = _dev_list[0]
-    if _d.init_device():
-        print("Device {} initialized".format(_d.info()))
-    else:
-        print("Can't init device: {}".format(_d.name()))
-        sys.exit(1)
+    try:
+        _d.init_device(True)
+    except SerialException as e:
+        print(e)
 
-    print("Finded {} device(s)".format(len(_dev_list)))
-    for _d in _dev_list: print(_d.info())
     while True:
         r = input("Try switch relay, format: [numstate], where num - num of relay, state - switch state[0/1]:")
         try:
