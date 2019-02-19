@@ -198,7 +198,6 @@ def test():
 
     print("Finded {} device(s)".format(len(_dev_list)))
     for _d in _dev_list: print(_d.info())
-
     while True:
         r = input("Try switch relay, format: [numstate], where num - num of relay, state - switch state[0/1]:")
         try:
