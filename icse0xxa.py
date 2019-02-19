@@ -50,14 +50,17 @@ class ICSE0XXADevice:
         self.__chek_init()
         return "{} with {} relays".format(self.name(), self.relays_count())
 
+    def port(self):
+        return self.__port
 
-    def port(self): return self.__port
-    def id(self): return self.__id
+    def id(self):
+        return self.__id
 
     def name(self):
         if self.__id in ICSE0XXADevice.MODELS:
             return "{}@{}".format(ICSE0XXADevice.MODELS[self.__id], self.__port)
-        else: return "Unknown_Device@{}".format(self.port())
+        else:
+            return "Unknown_Device@{}".format(self.port())
 
     def switch_relay(self, relay_num, enable):
         """Switching relay on device
@@ -80,7 +83,6 @@ class ICSE0XXADevice:
         NOTICE:
         In listening mode device not responding for identification
         For disable listening mode need turn off or reset device!
-        :return Result of initialize (bool)
         :except SerialTimeoutException, SerialException"""
         self.__initialized = False
         self.__connection = Serial()
@@ -97,7 +99,7 @@ class ICSE0XXADevice:
             self.__connection.open()
             time.sleep(0.5)
         except Exception as e:
-            icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e))
+            icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e), self)
             raise e
         # no errors - good
         self.__initialized = True
@@ -125,6 +127,7 @@ def load_devices_from_config(file="icse0xxa.conf"):
         dev_list.append(ICSE0XXADevice(k, int(c[ICSE0XXADevice.MAIN_CFG_SECTION][k], 16)))
     return dev_list
 
+
 def save_divices_to_config(dev_list, file="icse0xxa.conf"):
     c = ConfigParser()
     c.optionxform = str
@@ -133,6 +136,7 @@ def save_divices_to_config(dev_list, file="icse0xxa.conf"):
     for d in dev_list:
         c[ICSE0XXADevice.MAIN_CFG_SECTION][d.port()] = hex(d.id())
     c.write(open(file, "w"))
+
 
 def find_devices():
     """Find ICSE0XXA devices on ports
@@ -162,11 +166,10 @@ def find_devices():
     return dev_list
 
 
-
-def icse0xxa_eprint(err):
+def icse0xxa_eprint(err, dev=""):
     print(err, file=sys.stderr)
     if icse0xxa_err_file:
-        print("{} ERR: {}".format(time.asctime(), err), file=icse0xxa_err_file)
+        print("{} {} Error: {}".format(time.asctime(), dev, err), file=icse0xxa_err_file)
 
 
 def test():
@@ -174,36 +177,43 @@ def test():
     global icse0xxa_err_file
     icse0xxa_err_file = open(file="ICSE0XXA.errors", mode="a", encoding="utf8")
 
-    _dev_list = load_devices_from_config()
-    if len(_dev_list) == 0:
+    dev_list = load_devices_from_config()
+    if len(dev_list) == 0:
         print("No devices in config file, try autosearch device on serial ports")
-        _dev_list = find_devices()
+        dev_list = find_devices()
 
-        if len(_dev_list) == 0:
+        if len(dev_list) == 0:
             print("No device(s) finded on serial ports. " \
                   "If device connected - try reset him")
             sys.exit(1)
         else:
             # Save devices in config
-            save_divices_to_config(_dev_list)
-            print("Finded {} device(s)".format(len(_dev_list)))
-    else: print("Loaded {} device(s)".format(len(_dev_list)))
+            save_divices_to_config(dev_list)
+            print("Finded {} device(s)".format(len(dev_list)))
+    else:
+        print("Loaded {} device(s)".format(len(dev_list)))
 
-    _d = _dev_list[0]
+    # Print loaded/finded divices
+    for d in dev_list: print("Device: {}".format(d.name()))
+
+    d = dev_list[0]
     try:
-        _d.init_device(True)
+        d.init_device(True)
     except SerialException as e:
         print(e)
+        sys.exit(1)
+
+    print("Device initialized: {}".format(d.info()))
 
     while True:
         r = input("Try switch relay, format: [numstate], where num - num of relay, state - switch state[0/1]:")
         try:
             if r == "": sys.exit(0)
             n, s = r[0], r[1]
-            _d.switch_relay(int(n), bool(int(s)))
+            d.switch_relay(int(n), bool(int(s)))
         except Exception as ex:
             print("Error input format, try again...", )
 
+
 if __name__ == "__main__":
     test()
-
