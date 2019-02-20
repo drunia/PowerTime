@@ -112,7 +112,7 @@ class ICSE0XXADevice:
         return self.name()
 
 
-def load_devices_from_config(file="drivers.conf"):
+def load_devices_from_config(file="icse0xxa.conf"):
     """Load ICSE0XXA devices from config file
     :return: dev_list[ICSE0XXADevice, ...]
     Returned objects device not initialized!"""
