@@ -21,14 +21,8 @@ class ICSE0XXADevice:
     MAIN_CFG_SECTION = "devices"
     # Known device types
     MODELS = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
-
-    __initialized = False
-    __port = None
-    __id = None
-    __connection = None
-    __relays_register = 0
     # Relays count by device id
-    __relays = {0xAB: 4, 0xAD: 2, 0xAC: 8}
+    RELAYS = {0xAB: 4, 0xAD: 2, 0xAC: 8}
 
     def __init__(self, port, id):
         """Create ICSE0XXADevice object
@@ -36,15 +30,19 @@ class ICSE0XXADevice:
         :arg id  Device id"""
 
         super().__init__()
+
         self.__port = port
         self.__id = id
+        self.__initialized = False
+        self.__connection = None
+        self.__relays_register = 0
 
     def __del__(self):
         if self.__connection != None: self.__connection.close()
 
     def relays_count(self):
         self.__chek_init()
-        return self.__relays[self.__id]
+        return ICSE0XXADevice.RELAYS[self.__id]
 
     def info(self):
         self.__chek_init()
@@ -70,7 +68,7 @@ class ICSE0XXADevice:
         ON - diode on PCB is off, OFF - diodes lights!"""
         self.__chek_init()
         if relay_num >= self.relays_count():
-            raise Exception("Relay num mast be less than {}".format(self.__relays[self.__id]))
+            raise Exception("Relay num mast be less than {}".format(ICSE0XXADevice.RELAYS[self.__id]))
         if enable:
             self.__relays_register = self.__relays_register | (1 << relay_num)
         else:
