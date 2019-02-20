@@ -6,7 +6,7 @@ from serial import Serial, SerialException, SerialTimeoutException
 from serial.tools import list_ports
 from configparser import ConfigParser
 
-# Error log file, set for logging icse0xxa errors
+# Error log file, set for logging drivers errors
 icse0xxa_err_file = None
 
 
@@ -112,7 +112,7 @@ class ICSE0XXADevice:
         return self.name()
 
 
-def load_devices_from_config(file="icse0xxa.conf"):
+def load_devices_from_config(file="drivers.conf"):
     """Load ICSE0XXA devices from config file
     :return: dev_list[ICSE0XXADevice, ...]
     Returned objects device not initialized!"""
@@ -126,7 +126,7 @@ def load_devices_from_config(file="icse0xxa.conf"):
     return dev_list
 
 
-def save_divices_to_config(dev_list, file="icse0xxa.conf"):
+def save_divices_to_config(dev_list, file="drivers.conf"):
     c = ConfigParser()
     c.optionxform = str
     c.read(file)
