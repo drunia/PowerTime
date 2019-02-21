@@ -17,12 +17,7 @@ class PTBasePlugin(metaclass=ABCMeta):
     """Base Power Time plugin"""
     def __init__(self):
         super().__init__()
-        self.activated = False
-
-    def __getattribute__(self, item):
-        if item not in ("activate", "get_info") and not (self.activated):
-            raise Exception("Plugin not activated, activate first")
-        return PTBasePlugin.__getattribute__(self, item)
+        self.__activated = False
 
     @abstractmethod
     def get_info(self):

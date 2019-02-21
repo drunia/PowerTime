@@ -9,10 +9,10 @@ class ICSE0XXA_Plugin(PTBasePlugin):
     """Plugin for control ICSE0XXA devices"""
     def __init__(self):
         super().__init__()
-        self.activated = False
 
     def __check_activated(self):
-        if not self.activated: raise ActivateException("Need activate first!")
+        if not self.__activated:
+            raise ActivateException("Need activate first!")
 
     def get_info(self):
         return {"author": "drunia",
@@ -40,5 +40,5 @@ class ICSE0XXA_Plugin(PTBasePlugin):
         self.__dev_lists = find_devices()
         self.__channels = {}
         
-        self.activated = True
-        pass
+        self.__activated = True
+        return True
