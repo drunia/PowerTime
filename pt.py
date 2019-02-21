@@ -9,8 +9,8 @@ print("Working directory:", os.getcwd())
 
 plugin = ICSE0XXA_Plugin()
 print(plugin.get_info())
-print(plugin.activated)
-
+print(plugin.activate())
+print("Activated:", plugin.activated)
 
 
 

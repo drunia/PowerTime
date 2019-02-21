@@ -20,9 +20,9 @@ class PTBasePlugin(metaclass=ABCMeta):
         self.activated = False
 
     def __getattribute__(self, item):
-        if (item != "activate") and not (self.activated):
+        if item not in ("activate", "get_info") and not (self.activated):
             raise Exception("Plugin not activated, activate first")
-        return super().__getattribute__(item)
+        return PTBasePlugin.__getattribute__(self, item)
 
     @abstractmethod
     def get_info(self):

@@ -39,6 +39,6 @@ class ICSE0XXA_Plugin(PTBasePlugin):
     def activate(self):
         self.__dev_lists = find_devices()
         self.__channels = {}
-
-
+        
+        self.activated = True
         pass
