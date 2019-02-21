@@ -9,6 +9,20 @@ class PTBasePlugin(metaclass=ABCMeta):
     @abstractmethod
     def get_info(self):
         """Main info about plugin
+
         :return {author: author, plugin_name: plugin_name, version: version, description}"""
-        pass
+        return {}
+
+    @abstractmethod
+    def get_channels_count(self):
+        """Return count of swichable chanels"""
+        return 0
+
+    def switch(self, channel, state):
+        """Switch channel on/off
+
+        :param channel Channel to switch int
+        :param state State of chanel bool"""
+
+        return 0
 
