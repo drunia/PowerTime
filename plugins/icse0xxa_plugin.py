@@ -2,18 +2,17 @@
 #-*- coding: utf-8 -*-
 
 from drivers.icse0xxa import *
-from plugins.base_plugin import PTBasePlugin
-
-class SwitchException(Exception):
-    """Exception raises on problem in switch"""
-    pass
+from plugins.base_plugin import *
 
 
 class ICSE0XXA_Plugin(PTBasePlugin):
     """Plugin for control ICSE0XXA devices"""
     def __init__(self):
         super().__init__()
-        self.__dev_lists = find_devices()
+        self.activated = False
+
+    def __check_activated(self):
+        if not self.activated: raise ActivateException("Need activate first!")
 
     def get_info(self):
         return {"author": "drunia",
@@ -22,17 +21,24 @@ class ICSE0XXA_Plugin(PTBasePlugin):
                 "description": "Test"}
 
     def get_channels_count(self):
+        self.__check_activated()
         count = 0
         for d in self.__dev_lists:
             count += d.relays_count()
         return count
 
     def switch(self, channel, state):
-        if channel > self.get_channels_count():
+        self.__check_activated()
+        if channel > len(self.__channels):
             raise SwitchException(
                 "Num {} channel biggest of channels {} "
-                "on connected devices.".format(channel, self.get_channels_count())
+                "on connected devices.".format(channel, len(self.__channels))
             )
-        all_channels = {num_device: channels for num_device, channels in self.__dev_lists}
-        pass
+        self.__dev_lists[self.__channels[channel]].switch_relay(channel-1, state)
 
+    def activate(self):
+        self.__dev_lists = find_devices()
+        self.__channels = {}
+
+
+        pass

@@ -9,12 +9,8 @@ print("Working directory:", os.getcwd())
 
 plugin = ICSE0XXA_Plugin()
 print(plugin.get_info())
-print(plugin.get_channels_count())
+print(plugin.activated)
 
-try:
-    plugin.switch(1,True)
-except Exception as e:
-    print("Error happend:", e)
 
 
 
