@@ -9,9 +9,10 @@ class ICSE0XXA_Plugin(PTBasePlugin):
     """Plugin for control ICSE0XXA devices"""
     def __init__(self):
         super().__init__()
+        self.__dev_list = []
 
     def __check_activated(self):
-        if not self.__activated:
+        if not self._activated:
             raise ActivateException("Need activate first!")
 
     def get_info(self):
@@ -34,11 +35,30 @@ class ICSE0XXA_Plugin(PTBasePlugin):
                 "Num {} channel biggest of channels {} "
                 "on connected devices.".format(channel, len(self.__channels))
             )
-        self.__dev_lists[self.__channels[channel]].switch_relay(channel-1, state)
+        dev, ch = self.__channels[channel-1]
+        dev.switch_relay(ch, state)
+
 
     def activate(self):
-        self.__dev_lists = find_devices()
+        if self._activated: return self._activated
+
+        #self.__dev_lists = find_devices()
+
+        self.__dev_list = load_devices_from_config()
+        for d in self.__dev_list:
+            d.init_device()
+
+        relay = 0
+        # Structure of __channels : {global number of channel: [device, local number of channel], ...}
         self.__channels = {}
+        for d in self.__dev_list:
+            for r in range(0, 8):
+                self.__channels[r+relay] = [d, r]
+            relay += r+1
         
-        self.__activated = True
-        return True
+        self._activated = True
+        return self._activated
+
+    def build_settings(self, qwidget):
+
+        pass

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
+from PyQt5.QtWidgets import QWidget
 
 
 class SwitchException(Exception):
@@ -17,13 +18,14 @@ class PTBasePlugin(metaclass=ABCMeta):
     """Base Power Time plugin"""
     def __init__(self):
         super().__init__()
-        self.__activated = False
+        self._activated = False
 
     @abstractmethod
     def get_info(self):
         """Main info about plugin
 
-        :return: dict {author: str, plugin_name: str, version: str, description: str}"""
+        :return: dict {author: str, plugin_name: str, version: str, description: str}
+        :raises Exception"""
         return {}
 
     @abstractmethod
@@ -36,7 +38,8 @@ class PTBasePlugin(metaclass=ABCMeta):
         """Switch channel on/off
 
         :param: channel Channel to switch int
-        :param: state State of chanel bool"""
+        :param: state State of chanel bool
+        :raises SwitchException, Exception"""
         pass
 
     @abstractmethod
@@ -47,6 +50,16 @@ class PTBasePlugin(metaclass=ABCMeta):
         This method activate / initialize plugin
 
         :return: Activation result (bool)
+        :raises Exception
+        """
+        return False
+
+    @abstractmethod
+    def build_settings(self, qwidget):
+        """Buils plugin setting on plugin page
+
+        :raises Exception
         """
         pass
+
 

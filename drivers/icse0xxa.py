@@ -18,7 +18,7 @@ class ICSE0XXADevice:
     # Command for switching device to listening mode
     READY_COMMAND = bytes([0x51])
     # Name of main device config section
-    MAIN_CFG_SECTION = "devices"
+    MAIN_CFG_SECTION = "ICSE0XXA_devices"
     # Known device types
     MODELS = {0xAB: "ICSE012A", 0xAD: "ICSE013A", 0xAC: "ICSE014A"}
     # Relays count by device id
