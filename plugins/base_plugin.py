@@ -55,8 +55,8 @@ class PTBasePlugin(metaclass=ABCMeta):
         return False
 
     @abstractmethod
-    def build_settings(self, qwidget):
-        """Buils plugin setting on plugin page
+    def build_settings(self, widget: QWidget):
+        """Build plugin setting ui on plugin page
 
         :raises Exception
         """

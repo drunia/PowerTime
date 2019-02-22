@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
-from drivers.icse0xxa import *
+from devices.icse0xxa import *
 from plugins.base_plugin import *
-
+from PyQt5.QtWidgets import *
 
 class ICSE0XXA_Plugin(PTBasePlugin):
     """Plugin for control ICSE0XXA devices"""
@@ -59,6 +59,7 @@ class ICSE0XXA_Plugin(PTBasePlugin):
         self._activated = True
         return self._activated
 
-    def build_settings(self, qwidget):
+    def build_settings(self, widget: QWidget):
+
 
         pass

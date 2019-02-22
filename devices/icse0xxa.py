@@ -6,7 +6,7 @@ from serial import Serial, SerialException, SerialTimeoutException
 from serial.tools import list_ports
 from configparser import ConfigParser
 
-# Error log file, set for logging drivers errors
+# Error log file, set for logging devices errors
 icse0xxa_err_file = None
 
 
@@ -126,7 +126,7 @@ def load_devices_from_config(file="icse0xxa.conf"):
     return dev_list
 
 
-def save_divices_to_config(dev_list, file="drivers.conf"):
+def save_divices_to_config(dev_list, file="devices.conf"):
     c = ConfigParser()
     c.optionxform = str
     c.read(file)
