@@ -65,6 +65,5 @@ class ICSE0XXA_Plugin(PTBasePlugin):
         return self._activated
 
     def build_settings(self, widget: QWidget):
-
-
-        pass
+        from ui.icse0xxa_settings import Settings
+        Settings(self, widget)
