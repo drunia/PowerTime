@@ -126,7 +126,7 @@ def load_devices_from_config(file="icse0xxa.conf"):
     return dev_list
 
 
-def save_divices_to_config(dev_list, file="devices.conf"):
+def save_divices_to_config(dev_list, file="icse0xxa.conf"):
     c = ConfigParser()
     c.optionxform = str
     c.read(file)

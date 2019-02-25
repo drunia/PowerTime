@@ -24,7 +24,7 @@ class ICSE0XXA_Plugin(PTBasePlugin):
     def get_channels_count(self):
         self.__check_activated()
         count = 0
-        for d in self.__dev_lists:
+        for d in self.__dev_list:
             count += d.relays_count()
         return count
 
@@ -40,13 +40,18 @@ class ICSE0XXA_Plugin(PTBasePlugin):
 
 
     def activate(self):
-        if self._activated: return self._activated
-
-        #self.__dev_lists = find_devices()
-
+        # Load from config file first
         self.__dev_list = load_devices_from_config()
+        if len(self.__dev_list) == 0:
+            print("Try find devices on serial ports...")
+            self.__dev_list = find_devices()
+            if len(self.__dev_list) > 0:
+                save_divices_to_config(self.__dev_list)
+            else: print("No devices!")
+
         for d in self.__dev_list:
-            d.init_device()
+            d.init_device(not self._activated)
+            print(d, "initialized")
 
         relay = 0
         # Structure of __channels : {global number of channel: [device, local number of channel], ...}
