@@ -48,12 +48,12 @@ sett_frame.show()
 mw.show()
 
 plugin.build_settings(sett_frame)
-
+plugin.activate()
 
 
 desktop: QDesktopWidget = qApp.desktop()
 
-#qapp.setStyle("fusion")
+qapp.setStyle("fusion")
 
 sys.exit(qapp.exec())
 
