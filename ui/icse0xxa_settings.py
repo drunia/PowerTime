@@ -34,7 +34,7 @@ class Settings(QFrame):
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
         self.qlist.setModel(self.qlist_model)
-        f = self.qlist.font(); f.setPointSize(14)
+        f = self.qlist.font(); f.setPointSize(12)
         self.qlist.setFont(f)
         self.vboxl.addWidget(self.qlist)
 
@@ -43,7 +43,7 @@ class Settings(QFrame):
         self.find_button.setIconSize(QSize(24,24))
         self.find_button.clicked.connect(self.find_devices)
         # Save Button
-        self.save_button = QPushButton(QIcon("./res/lock.ico"), "Применить")
+        self.save_button = QPushButton(QIcon("./res/lock.ico"), "Записать")
         self.save_button.setIconSize(QSize(24, 24))
         self.save_button.clicked.connect(self.save_settings)
         # Buttons H layout
