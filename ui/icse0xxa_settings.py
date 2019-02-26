@@ -27,14 +27,14 @@ class Settings(QFrame):
         # QListView to view connected/saved devices
         self.qlist = QListView()
         self.qlist_model = QStandardItemModel(self.qlist)
-        for d in range(10):
-            item = QStandardItem("device %s" % d)
+        for d in load_devices_from_config():
+            item = QStandardItem(d.name())
             item.setCheckable(True)
             item.setEditable(False)
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
         self.qlist.setModel(self.qlist_model)
-        f = self.qlist.font(); f.setPointSize(16)
+        f = self.qlist.font(); f.setPointSize(14)
         self.qlist.setFont(f)
         self.vboxl.addWidget(self.qlist)
 
@@ -45,7 +45,7 @@ class Settings(QFrame):
         # Save Button
         self.save_button = QPushButton(QIcon("./res/lock.ico"), "Применить")
         self.save_button.setIconSize(QSize(24, 24))
-        self.save_button.clicked.connect(lambda : print("Save!"))
+        self.save_button.clicked.connect(self.save_settings)
         # Buttons H layout
         butt_lay = QHBoxLayout()
         butt_lay.addWidget(self.find_button)
@@ -58,8 +58,13 @@ class Settings(QFrame):
     def find_devices(self):
         devs = find_devices()
         if len(devs) == 0:
-            QMessageBox.warning(self, "Поиск устройств", "Устройства не найдены", QMessageBox.Ok)
+            QMessageBox.warning(
+                self,"Поиск устройств", (
+                    "Устройства не найдены!\n\n" 
+                    "Попробуйте выключить - включить устройство(а) и выполнить поиск снова."
+                ), QMessageBox.Ok)
             return
+        # find ...
         self.qlist_model.clear()
         for d in devs:
             item = QStandardItem(d.name())
@@ -67,6 +72,10 @@ class Settings(QFrame):
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
 
+    def save_settings(self):
+        m = self.qlist_model
+        print(m.rowCount())
+        print()
 
 
 
