@@ -26,7 +26,7 @@ mw = QMainWindow()
 mw.setGeometry(0,0,800,800)
 mw.setWindowTitle("Main Window")
 mw.setMinimumSize(200,200)
-mw.show()
+
 
 pb = QPushButton("Включить", mw)
 pb.setGeometry(100,100, 150, 30)
@@ -44,16 +44,16 @@ sett_frame.move(150,200)
 sett_frame.resize(500,500)
 sett_frame.show()
 
+
+mw.show()
+
 plugin.build_settings(sett_frame)
 
-try:
-    plugin.activate()
-except Exception:
-    pass
+
 
 desktop: QDesktopWidget = qApp.desktop()
 
-qapp.setStyle("fusion")
+#qapp.setStyle("fusion")
 
 sys.exit(qapp.exec())
 
