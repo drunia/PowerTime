@@ -12,10 +12,12 @@ class Settings(QFrame):
         self.setup_ui()
 
     def setup_ui(self):
-        self.setFrameStyle(QFrame.Panel)
-        self.setMinimumSize(320, 480)
         # Set size = container size
-        self.resize(self.parent().size())
+        self.setMinimumSize(500, 500)
+        if not self.parent() is None:
+            self.resize(self.parent().size())
+        else:
+            self.resize(500, 500)
 
         # layouts
         self.hbox = QHBoxLayout()
@@ -31,6 +33,7 @@ class Settings(QFrame):
         f = self.qlist.font(); f.setPointSize(12)
         self.qlist.setFont(f)
         self.qlist.clicked.connect(self.qlist_item_clicked)
+        self.qlist.selectionModel().currentChanged.connect(self.qlist_sel_changed)
         self.vboxl.addWidget(self.qlist)
 
         # Search button
@@ -39,7 +42,7 @@ class Settings(QFrame):
         self.find_button.clicked.connect(self.find_devices)
 
         # Save Button
-        self.save_button = QPushButton(QIcon("./res/lock.ico"), "Записать")
+        self.save_button = QPushButton(QIcon("./res/save.ico"), "Записать")
         self.save_button.setIconSize(QSize(24, 24))
         self.save_button.clicked.connect(self.save_settings)
 
@@ -82,6 +85,10 @@ class Settings(QFrame):
         self.st_lb.setText("Загружено утсройств: {} ".format(len(devs)))
 
         self.show()
+
+    def qlist_sel_changed(self, item1, item2):
+        if item1.row() != item2.row():
+            self.qlist.clicked[QModelIndex].emit(item1)
 
     # Search devices on serial bus
     def find_devices(self):
@@ -133,15 +140,17 @@ class Settings(QFrame):
             info_text = devs[dev.id()][0]
             img_name = devs[dev.id()][1]
             self.info_lb.setText(info_text)
-            self.img_lb.setPixmap(QPixmap.fromImage(QImage("./res/" + img_name)))
+            self.img_lb.setPixmap(QPixmap("./res/" + img_name))
         except Exception as e:
             print(e)
 
 
 if __name__ == "__main__":
+    import os
+    os.chdir("../")
     app = QApplication([])
-    s = Settings(ICSE0XXA_Plugin(), )
+    s = Settings(ICSE0XXA_Plugin(), None)
     s.show()
-    app.exec()
     print("Settings DEBUG")
-    pass
+    print(__file__)
+    app.exec()
