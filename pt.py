@@ -50,12 +50,17 @@ pb2.show()
 #sett_frame.resize(500,500)
 #sett_frame.show()
 
-box_lay = 
-box_lay
-for n in range(20):
+from ui.flowlayout import FlowLayout
+
+box_lay = FlowLayout()
+for n in range(50):
     b = QPushButton()
     b.setText("Button %d" % n)
     box_lay.addWidget(b)
+
+mw.setLayout(box_lay)
+
+
 mw.setLayout(box_lay)
 
 
