@@ -27,7 +27,8 @@ print(plugin.get_info())
 qapp = QApplication(sys.argv)
 qapp.setWindowIcon(QIcon("./res/pt.ico"))
 
-mw = QMainWindow()
+
+mw = QWidget()
 mw.setGeometry(0,0,800,800)
 mw.setWindowTitle("Main Window")
 mw.setMinimumSize(200,200)
@@ -43,16 +44,25 @@ pb2.clicked.connect(button_clk)
 pb2.setGeometry(100,130, 150, 30)
 pb2.show()
 
-sett_frame = QFrame(mw)
-sett_frame.setFrameStyle(QFrame.Panel)
-sett_frame.move(150,200)
-sett_frame.resize(500,500)
-sett_frame.show()
+#sett_frame = QFrame(mw)
+#sett_frame.setFrameStyle(QFrame.Panel)
+#sett_frame.move(150,200)
+#sett_frame.resize(500,500)
+#sett_frame.show()
+
+box_lay = 
+box_lay
+for n in range(20):
+    b = QPushButton()
+    b.setText("Button %d" % n)
+    box_lay.addWidget(b)
+mw.setLayout(box_lay)
+
 
 
 mw.show()
 
-plugin.build_settings(sett_frame)
+#plugin.build_settings(sett_frame)
 #plugin.activate()
 
 
