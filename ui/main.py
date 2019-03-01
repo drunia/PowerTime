@@ -11,37 +11,39 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setup_ui()
+        self._setup_ui()
 
-    def setup_ui(self):
-
+    def _setup_ui(self):
         self.setWindowTitle("PowerTime")
         self.resize(500, 500)
 
         # Main menu
         menubar: QMenuBar = self.menuBar()
-        menubar.setLayoutDirection(1)
         menufont: QFont = menubar.font()
-        menufont.setPointSize(14)
+        menufont.setPointSize(13)
         menubar.setFont(menufont)
-
-        self.menu_devices = QMenu("Устройства")
+        menubar.setMinimumHeight(40)
+        # Settings
         self.menu_settings = QMenu("Настройки")
-        menubar.addMenu(self.menu_devices)
         menubar.addMenu(self.menu_settings)
-
-
-        self.menu_devices.setFixedSize(100, 30)
-        #self.menu_devices.setIcon(ico)
-
-
-
-
-        #self.menu_devices.setIcon()
-        #self.mmenu.addMenu(self.menu_devices)
-
+        # Devices (plugins)
+        self.menu_devices = QMenu("Устройства")
+        menubar.addMenu(self.menu_devices)
         self.statusBar().showMessage("*(&&*&$#")
 
+        self._build_devices_actions()
+
+    def _build_devices_actions(self):
+        """search device-plugins in modules dir
+        :return list[QAction]"""
+        import pkgutil, inspect
+        actions = []
+        mod_info_list = list(pkgutil.iter_modules(["../plugins"]))
+        for module in mod_info_list:
+            mod = __import__("plugins." + module.name)
+            for name, obj in inspect.getmembers(mod):
+                if inspect.isclass(obj):
+                    print(obj)
 
 
 
