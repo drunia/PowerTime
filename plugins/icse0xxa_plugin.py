@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
-from devices.icse0xxa import *
-from plugins.base_plugin import *
-from PyQt5.QtWidgets import *
+from devices.icse0xxa import ICSE0XXADevice, load_devices_from_config, save_devices_to_config, find_devices
+from plugins.base_plugin import PTBasePlugin, ActivateException, SwitchException
+from PyQt5.QtWidgets import QWidget
 
 class ICSE0XXA_Plugin(PTBasePlugin):
     """Plugin for control ICSE0XXA devices"""
@@ -46,7 +46,7 @@ class ICSE0XXA_Plugin(PTBasePlugin):
             print("Try find devices on serial ports...")
             self.__dev_list = find_devices()
             if len(self.__dev_list) > 0:
-                save_divices_to_config(self.__dev_list)
+                save_devices_to_config(self.__dev_list)
             else: print("No devices!")
 
         for d in self.__dev_list:

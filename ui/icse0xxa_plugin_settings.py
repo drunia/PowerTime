@@ -122,7 +122,7 @@ class Settings(QFrame):
             item: QStandardItem = m.item(i)
             if item.checkState(): devs.append(item.data())
         if len(devs) > 0:
-            save_divices_to_config(devs)
+            save_devices_to_config(devs)
             QMessageBox.information(self, "Запись в файл",
                                     "Записано {} устройств".format(len(devs)), QMessageBox.Ok)
         elif m.rowCount() > 0:

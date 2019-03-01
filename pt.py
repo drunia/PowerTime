@@ -21,17 +21,18 @@ def read_config(filename=MAIN_CONF_FILE):
 def write_config(filename=MAIN_CONF_FILE):
     config.write(filename)
 
-config = read_config("icse0xxa.conf")
-print(config.get("DEFAULT", "option", "123"))
+if __name__ == "__main__":
+    config = read_config("icse0xxa.conf")
+    print(config.get("DEFAULT", "option", "123"))
 
 
-sys.exit(0)
+    sys.exit(0)
 
-app = QApplication(sys.argv)
-desktop: QDesktopWidget = app.desktop()
+    app = QApplication(sys.argv)
+    desktop: QDesktopWidget = app.desktop()
 
-mw = MainWindow()
-mw.show()
+    mw = MainWindow()
+    mw.show()
 
-app.setStyle("fusion")
-sys.exit(app.exec())
+    app.setStyle("fusion")
+    sys.exit(app.exec())

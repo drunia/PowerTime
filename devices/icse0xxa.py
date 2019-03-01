@@ -127,7 +127,7 @@ def load_devices_from_config(file="icse0xxa.conf"):
     return dev_list
 
 
-def save_divices_to_config(dev_list, file="icse0xxa.conf"):
+def save_devices_to_config(dev_list, file="icse0xxa.conf"):
     c = ConfigParser()
     c.optionxform = str
     c.read(file)
@@ -187,7 +187,7 @@ def test():
             sys.exit(1)
         else:
             # Save devices in config
-            save_divices_to_config(dev_list)
+            save_devices_to_config(dev_list)
             print("Finded {} device(s)".format(len(dev_list)))
     else:
         print("Loaded {} device(s)".format(len(dev_list)))

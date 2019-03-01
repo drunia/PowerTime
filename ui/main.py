@@ -31,19 +31,30 @@ class MainWindow(QMainWindow):
         menubar.addMenu(self.menu_devices)
         self.statusBar().showMessage("*(&&*&$#")
 
-        self._build_devices_actions()
+        self._build_devices_actions(plugin_dir="../plugins")
 
-    def _build_devices_actions(self):
+    def _build_devices_actions(self, plugin_dir="./plugins"):
         """search device-plugins in modules dir
         :return list[QAction]"""
         import pkgutil, inspect
-        actions = []
-        mod_info_list = list(pkgutil.iter_modules(["../plugins"]))
+
+        self.actions = []
+        self.modules = []
+
+        # Find modules with classes inherited from PTBasePlugin
+        mod_info_list = list(pkgutil.iter_modules([plugin_dir]))
         for module in mod_info_list:
-            mod = __import__("plugins." + module.name)
-            for name, obj in inspect.getmembers(mod):
-                if inspect.isclass(obj):
-                    print(obj)
+            m = __import__("plugins." + module.name, fromlist=['object'])
+            clslist = inspect.getmembers(m, inspect.isclass)
+            for cls in clslist:
+                bases = cls[1].__mro__
+                for b in bases:
+                    if b.__name__ == "PTBasePlugin" and not cls[1].__name__ == "PTBasePlugin":
+                        print("{}(): Plugin class detected: {}".format(inspect.stack()[0][3], cls[1].__name__))
+                        self.modules.append(cls[1])
+                        break
+
+        print(dir())
 
 
 
