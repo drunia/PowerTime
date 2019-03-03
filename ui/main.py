@@ -103,7 +103,7 @@ class PluginSettings(QDialog):
         self.setup_ui()
 
     def setup_ui(self):
-        self.setMinimumSize(600, 600)
+        self.setMinimumSize(550, 650)
         self.setWindowModality(Qt.WindowModal)
         self.setWindowTitle(self.plugin.get_info()["plugin_name"])
 
@@ -117,7 +117,7 @@ class PluginSettings(QDialog):
 
 
         vboxlay = QVBoxLayout(self)
-        vboxlay.addWidget(plugin_frame)
+        vboxlay.addWidget(plugin_frame, alignment=Qt.AlignCenter)
         vboxlay.addWidget(ok_button)
 
     def activate_plugin(self):

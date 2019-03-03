@@ -38,12 +38,12 @@ class Settings(QFrame):
 
         # Search button
         self.find_button = QPushButton(QIcon("./res/search.ico"), "Поиск устройств")
-        self.find_button.setIconSize(QSize(24,24))
+        self.find_button.setIconSize(QSize(20, 20))
         self.find_button.clicked.connect(self.find_devices)
 
         # Save Button
         self.save_button = QPushButton(QIcon("./res/save.ico"), "Записать")
-        self.save_button.setIconSize(QSize(24, 24))
+        self.save_button.setIconSize(QSize(20, 20))
         self.save_button.clicked.connect(self.save_settings)
 
         # Buttons H layout
