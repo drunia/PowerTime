@@ -9,6 +9,7 @@ class ICSE0XXA_Plugin(PTBasePlugin):
     """Plugin for control ICSE0XXA devices"""
     def __init__(self):
         super().__init__()
+        self._activated = False
         self.__dev_list = []
 
     def __check_activated(self):
@@ -19,7 +20,8 @@ class ICSE0XXA_Plugin(PTBasePlugin):
         return {"author": "drunia",
                 "plugin_name": "ICSE0XXA control",
                 "version": 1.0,
-                "description": "Test"}
+                "description": "Test",
+                "activated": self._activated}
 
     def get_channels_count(self):
         self.__check_activated()

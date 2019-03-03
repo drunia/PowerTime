@@ -24,7 +24,7 @@ class PTBasePlugin(metaclass=ABCMeta):
     def get_info(self):
         """Main info about plugin
 
-        :return: dict {author: str, plugin_name: str, version: str, description: str}
+        :return: dict {author: str, plugin_name: str, version: str, description: str, activated: bool}
         :raises Exception"""
         return {}
 

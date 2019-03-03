@@ -15,7 +15,7 @@ class Settings(QFrame):
         # Set size = container size
         self.setMinimumSize(500, 500)
         if not self.parent() is None:
-            self.resize(self.parent().size())
+             self.resize(self.parent().size())
         else:
             self.resize(500, 500)
 
