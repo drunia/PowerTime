@@ -143,7 +143,7 @@ class PluginSettings(QDialog):
         self.plugin.build_settings(plugin_frame)
 
         self.activate_btn = QPushButton("Активировать")
-        self.activate_btn.setFixedHeight(30)
+        self.activate_btn.setFixedSize(150, 30)
         self.activate_btn.setCheckable(True)
         if self.plugin.get_info()["activated"]:
             self.activate_btn.setIcon(QIcon("./res/on.ico"))
@@ -156,7 +156,7 @@ class PluginSettings(QDialog):
 
         self.plugin_info_lb = QLabel("Plugin info")
         self.plugin_info_lb.setWordWrap(True)
-        self.plugin_info_lb.setFixedWidth(plugin_frame.width()-100)
+        self.plugin_info_lb.setFixedWidth(plugin_frame.width()-150)
         self.plugin_info_lb.setText(
             "<b>{}</b> - {} <br>Автор: <b>{}</b>, Версия: <b>{}</b>".format(
                 self.plugin.get_info()["plugin_name"],
@@ -181,6 +181,7 @@ class PluginSettings(QDialog):
             self.plugin : ICSE0XXA_Plugin
             if not self.plugin.get_info()["activated"]:
                 self.plugin.activate()
+                self.activate_btn.setIcon(QIcon("./res/on.ico"))
                 self.activate_btn.setText("Деактивировать")
                 print("Activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
             else: print(self.plugin, "already activated")
