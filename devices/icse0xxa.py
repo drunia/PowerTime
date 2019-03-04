@@ -134,7 +134,8 @@ def save_devices_to_config(dev_list, file="icse0xxa.conf"):
     c[ICSE0XXADevice.MAIN_CFG_SECTION] = {}
     for d in dev_list:
         c[ICSE0XXADevice.MAIN_CFG_SECTION][d.port()] = hex(d.id())
-    c.write(open(file, "w"))
+    with open(file, "w") as f:
+        c.write(f)
 
 
 def find_devices():

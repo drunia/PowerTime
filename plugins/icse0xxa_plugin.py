@@ -20,7 +20,7 @@ class ICSE0XXA_Plugin(PTBasePlugin):
         return {"author": "drunia",
                 "plugin_name": "ICSE0XXA control",
                 "version": 1.0,
-                "description": "Test",
+                "description": "Плагин для управления релейными модулями типа ICSE0XXA",
                 "activated": self._activated}
 
     def get_channels_count(self):
