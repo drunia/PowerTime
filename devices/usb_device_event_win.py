@@ -78,7 +78,7 @@ class Notification:
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
         self.hwnd = win32gui.CreateWindow(
             classAtom,
-            "Device Change Demo",
+            "usb_change_device_listener",
             style,
             0, 0,
             win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
@@ -95,15 +95,12 @@ class Notification:
         #  lParam - what's changed more exactly
         #
         dev_broadcast_hdr = DEV_BROADCAST_HDR.from_address(lparam)
-        print("hwnd = {}, msg = {}, wparam = {}, lparam = {}".format(hwnd, msg, wparam, lparam))
+        #print("hwnd = {}, msg = {}, wparam = {}, lparam = {}".format(hwnd, msg, wparam, lparam))
 
-
-        if wparam == DBT_DEVICEARRIVAL:
-            print(dev_broadcast_hdr.dbch_devicetype)
-            #    print("Something's DBT_DEVICEARRIVAL arrived")
-
-            #if dev_broadcast_hdr.dbch_devicetype == DBT_DEVTYP_VOLUME:
-            #   print("It's a volume!")
+        if wparam == DBT_DEVICEARRIVAL and dev_broadcast_hdr.dbch_devicetype == DBT_DEVTYPE_PORT:
+                print("PORT CONNECT ")
+        if wparam == DBT_DEVICEREMOVECOMPLETE and dev_broadcast_hdr.dbch_devicetype == DBT_DEVTYPE_PORT:
+                print("PORT DISCONNECT ")
 
         return 1
 

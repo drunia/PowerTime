@@ -13,11 +13,8 @@ class Settings(QFrame):
 
     def setup_ui(self):
         # Set size = container size
-        self.setMinimumSize(500, 500)
-        if not self.parent() is None:
-             self.resize(self.parent().size())
-        else:
-            self.resize(500, 500)
+        self.setMinimumSize(500, 400)
+        self.parent().setFixedSize(530, 400)
 
         # layouts
         self.hbox = QHBoxLayout()
@@ -56,18 +53,16 @@ class Settings(QFrame):
         self.info_lb = QLabel()
         self.info_lb.setWordWrap(True)
         self.info_lb.setFont(f)
-        self.vboxr.addWidget(self.info_lb)
+        self.vboxr.addWidget(self.info_lb, alignment=Qt.AlignTop)
 
         # Image label
         self.img_lb = QLabel()
         self.img_lb.setFixedWidth(self.width() // 2)
-        self.img_lb.setFixedHeight(self.height() // 3)
         self.vboxr.addWidget(self.img_lb)
 
         # Status label
         self.st_lb = QLabel()
         self.st_lb.setFont(f)
-        self.st_lb.setFixedHeight(30)
         self.st_lb.setAlignment(Qt.AlignRight | Qt.AlignBottom)
         self.st_lb.setText("Status text")
         self.vboxr.addWidget(self.st_lb, alignment=Qt.AlignBottom)

@@ -53,20 +53,21 @@ class MainWindow(QMainWindow):
         import pt
 
         # Plugins
-        for plugin in self.plugins:
+        for plugin in self.loaded_plugins:
             try:
                 if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
-                    self.config.add_section(pt.PLUGINS_CONF_SECTION)
-                self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info(self)["plugin_name"]] = plugin.get_info(self)["activated"]
+                   self.config.add_section(pt.PLUGINS_CONF_SECTION)
+                self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info()["plugin_name"]] = \
+                    str(plugin.get_info()["activated"])
             except Exception as e:
                 print(e)
-
-        #pt.write_config()
-
+        try:
+            pt.write_config(self.config)
+        except Exception as e:
+            print(e)
         del pt
 
     def closeEvent(self, e):
-        print(e)
         self.save_config()
 
     def devices_menu_show(self):
@@ -137,7 +138,8 @@ class PluginSettings(QDialog):
         self.setWindowTitle(self.plugin.get_info()["plugin_name"])
 
         plugin_frame = QFrame()
-        plugin_frame.setFixedSize(500, 500)
+        plugin_frame.setMaximumSize(1280, 1024)
+        plugin_frame.setMinimumSize(400, 200)
         self.plugin.build_settings(plugin_frame)
 
         self.activate_btn = QPushButton("Активировать")
