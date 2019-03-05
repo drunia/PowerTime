@@ -9,7 +9,6 @@ from plugins.icse0xxa_plugin import ICSE0XXA_Plugin
 import os
 
 
-
 class MainWindow(QMainWindow):
     """ Main control window of pt """
 
@@ -40,14 +39,14 @@ class MainWindow(QMainWindow):
         menubar.addMenu(self.menu_settings)
 
         # Devices (plugins)
-        self.menu_devices = QMenu("Устройства", self)
+        self.menu_devices = QMenu("Модули устройств", self)
         self.menu_devices.addActions(self._build_devices_actions())
         self.menu_devices.aboutToShow.connect(self.devices_menu_show)
         menubar.addMenu(self.menu_devices)
 
         # Statusbar
         self.statusBar().setFont(menubar.font())
-        self.statusBar().showMessage("Вeрсия: 0")
+        self.statusBar().showMessage("Вeрсия: " + self.config.get("DEFAULT", "version", fallback="N/A"))
 
     def save_config(self):
         import pt

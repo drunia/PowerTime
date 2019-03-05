@@ -26,7 +26,15 @@ class PTBasePlugin(metaclass=ABCMeta):
 
         :return: dict {author: str, plugin_name: str, version: str, description: str, activated: bool}
         :raises Exception"""
-        return {}
+
+        info = {
+            "author" : "Andrunin Dmitry",
+            "plugin_name": "Test plugin",
+            "version": "1.0.0",
+            "description": "This is example plugin description",
+            "activated": False
+        }
+        return info
 
     @abstractmethod
     def get_channels_count(self):

@@ -18,7 +18,7 @@ class ICSE0XXA_Plugin(PTBasePlugin):
             raise ActivateException("Need activate first!")
 
     def get_info(self):
-        return {"author": "drunia",
+        return {"author": "Andrunin Dmitry",
                 "plugin_name": "ICSE0XXA control",
                 "version": 1.0,
                 "description": "Плагин для управления релейными модулями типа ICSE0XXA",
