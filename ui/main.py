@@ -122,15 +122,18 @@ class MainWindow(QMainWindow):
 
     def mclick(self):
         plugin = qApp.sender().data()
-        psettings = PluginSettings(self, plugin)
-        psettings.show()
+        try:
+            psettings = PluginSettings(self, plugin)
+            psettings.show()
+        except Exception as e:
+            print(e)
 
 
 class PluginSettings(QDialog):
     """Settings window for current plugin"""
-    def __init__(self, main_win, plugin):
+    def __init__(self, parent, plugin):
         self.plugin = plugin
-        super().__init__(main_win)
+        super().__init__(parent)
         self.setup_ui()
 
     def setup_ui(self):
@@ -195,7 +198,7 @@ if __name__ == "__main__":
     print(os.getcwd())
 
     app = QApplication([])
-    mw = MainWindow()
+    mw = MainWindow(ConfigParser())
     mw.show()
 
     app.exec()
