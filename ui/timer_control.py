@@ -3,9 +3,11 @@
 
 
 from PyQt5.QtCore import Qt, QTimer, QTimerEvent
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPaintEvent, QPainter
 from PyQt5.QtWidgets import *
-import time
+from decimal import Decimal
+import datetime
+
 
 
 class TimerControl(QFrame):
@@ -15,6 +17,8 @@ class TimerControl(QFrame):
         super().__init__()
         self.time = 0
         self.cash = 0
+        self.displayed = True
+        self.paused = False
 
         self.timer = QTimer()
         self.timer.timerEvent = self._timerEvent
@@ -22,13 +26,25 @@ class TimerControl(QFrame):
 
         self._init_ui()
 
-    # Timer timeout
-    def _timerEvent(self, evt):
-        self.time += 1
-        self.time_display.display(0)
-        #print(time.strftime("%H:%M:%S", self.time))
-        print(time.strftime("%H:%M:%S", self.time))
+    # Timer
+    def _timerEvent(self, evt: QTimerEvent):
+        self.time += 100
+        self.cash = Decimal(self.time) * Decimal(80/60/60)
 
+        self.paused = True
+        if self.paused:
+            self.displayed = not self.displayed
+
+        # Time
+        if self.displayed:
+            str_time = str(datetime.timedelta(seconds=self.time))
+        else:
+            str_time = ""
+        # Cash
+        str_cash = "{:.2f}".format(self.cash)
+
+        self.time_display.display(str_time)
+        self.cash_display.display(str_cash)
 
     def _init_ui(self):
         # Set minimum size
@@ -46,12 +62,12 @@ class TimerControl(QFrame):
 
         # Time
         self.time_display = QLCDNumber()
-        self.time_display.setDigitCount(8)
+        self.time_display.setDigitCount(9)
         self.time_display.display("12:34:56")
 
         # $Cash
         self.cash_display = QLCDNumber()
-        self.cash_display.setDigitCount(6)
+        self.cash_display.setDigitCount(7)
         self.cash_display.display("123.00")
 
         # Controls
