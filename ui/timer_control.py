@@ -3,10 +3,10 @@
 
 
 from PyQt5.QtCore import Qt, QTimer, QTimerEvent
-from PyQt5.QtGui import QFont, QPaintEvent, QPainter
+from PyQt5.QtGui import QFont, QPaintEvent, QPainter, QPixmap, QPalette, QColor
 from PyQt5.QtWidgets import *
 from decimal import Decimal
-import datetime
+import datetime, math
 
 
 
@@ -15,7 +15,7 @@ class TimerControl(QFrame):
     
     def __init__(self):
         super().__init__()
-        self.time = 0
+        self.time = 54242
         self.cash = 0
         self.displayed = True
         self.paused = False
@@ -24,6 +24,9 @@ class TimerControl(QFrame):
         self.timer.timerEvent = self._timerEvent
         self.timer.startTimer(1000)
 
+        self.cash_pixmap = QPixmap("../res/cash.png")
+        self.time_pixmap = QPixmap("../res/clock.png")
+
         self._init_ui()
 
     # Timer
@@ -31,7 +34,6 @@ class TimerControl(QFrame):
         self.time += 100
         self.cash = Decimal(self.time) * Decimal(80/60/60)
 
-        self.paused = True
         if self.paused:
             self.displayed = not self.displayed
 
@@ -64,11 +66,16 @@ class TimerControl(QFrame):
         self.time_display = QLCDNumber()
         self.time_display.setDigitCount(9)
         self.time_display.display("12:34:56")
+        self.time_display.setSegmentStyle(QLCDNumber.Flat)
+        self.time_display.paintEvent = self._time_paintEvent
+        self.time_display.mouseMoveEvent = None
 
         # $Cash
         self.cash_display = QLCDNumber()
-        self.cash_display.setDigitCount(7)
+        self.cash_display.setDigitCount(8)
         self.cash_display.display("123.00")
+        self.cash_display.setSegmentStyle(QLCDNumber.Flat)
+        self.cash_display.paintEvent = self._cash_paintEvent
 
         # Controls
         self.start_btn = QPushButton("Старт")
@@ -90,6 +97,20 @@ class TimerControl(QFrame):
         controls_lay.setContentsMargins(0, 10, 0, 5)
 
         root_lay.addLayout(controls_lay)
+
+    # Paint cash icon in QLCDNumber
+    def _cash_paintEvent(self, evt: QPaintEvent):
+        p: QPainter = QPainter(self.cash_display)
+        w, h = 32, 32
+        p.drawPixmap(5, 5, w, h, self.cash_pixmap)
+        QLCDNumber.paintEvent(self.cash_display, evt)
+
+    # Paint clock icon in QLCDNumber
+    def _time_paintEvent(self, evt: QPaintEvent):
+        p: QPainter = QPainter(self.time_display)
+        w, h = 32, 32
+        p.drawPixmap(5, 5, w, h, self.time_pixmap)
+        QLCDNumber.paintEvent(self.time_display, evt)
 
 
 
