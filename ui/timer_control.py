@@ -6,36 +6,64 @@ from PyQt5.QtCore import Qt, QTimer, QTimerEvent
 from PyQt5.QtGui import QFont, QPaintEvent, QPainter, QPixmap, QPalette, QColor
 from PyQt5.QtWidgets import *
 from decimal import Decimal
-import datetime, math
+from configparser import  ConfigParser
+import datetime, math, enum, pt
 
 
+class ControlMode(enum.Enum):
+    TIME = 0
+    CASH = 1
+    FREE = 2
 
-class TimerControl(QFrame):
+
+class TimerCashControl(QFrame):
     """ Control for channel"""
+
+    CONFIG_FILENAME = "tariffs.conf"
     
-    def __init__(self):
-        super().__init__()
-        self.time = 54242
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.mode = ControlMode.FREE
+        self.time = 22*3600
         self.cash = 0
+        self.price = 80
         self.displayed = True
         self.paused = False
+        self.timer_id = 0
 
+        # Tariffs
+        self.config: ConfigParser = self.parent().config
+        if self.config.has_section(pt.TARIFFS_CONF_SECTION):
+            self.tariffs = self.config[pt.TARIFFS_CONF_SECTION]
+        else:
+            self.tariffs = {}
+
+        print(self.config.options(pt.TARIFFS_CONF_SECTION))
+
+        # Timer
         self.timer = QTimer()
         self.timer.timerEvent = self._timerEvent
-        self.timer.startTimer(1000)
+        self.timer_id = self.timer.startTimer(1000, Qt.PreciseTimer)
 
-        self.cash_pixmap = QPixmap("../res/cash.png")
-        self.time_pixmap = QPixmap("../res/clock.png")
+        # Icons
+        self.cash_pixmap = QPixmap("./res/cash.png")
+        self.time_pixmap = QPixmap("./res/clock.png")
 
+        # UI
         self._init_ui()
 
     # Timer
     def _timerEvent(self, evt: QTimerEvent):
-        self.time += 100
-        self.cash = Decimal(self.time) * Decimal(80/60/60)
-
         if self.paused:
             self.displayed = not self.displayed
+        else:
+            if self.mode == ControlMode.FREE:
+                self.time += 1
+            else:
+                self.time -= 1
+
+        self.cash = Decimal(self.time) * Decimal(self.price/3600)
 
         # Time
         if self.displayed:
@@ -44,15 +72,15 @@ class TimerControl(QFrame):
             str_time = ""
         # Cash
         str_cash = "{:.2f}".format(self.cash)
-
+        # Display values
         self.time_display.display(str_time)
         self.cash_display.display(str_cash)
 
     def _init_ui(self):
         # Set minimum size
-        self.setMinimumSize(300, 300)
+        self.setMinimumSize(330, 300)
         self.setFrameStyle(QFrame.Box)
-        self.resize(400, 300)
+        self.resize(self.minimumSize())
 
         # Title (Number of channel)
         self.tittle_lb = QLabel()
@@ -60,12 +88,12 @@ class TimerControl(QFrame):
         f: QFont = self.tittle_lb.font()
         f.setPointSize(20)
         self.tittle_lb.setFont(f)
-        self.tittle_lb.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+        self.tittle_lb.setAlignment(Qt.AlignLeft)
 
         # Time
         self.time_display = QLCDNumber()
         self.time_display.setDigitCount(9)
-        self.time_display.display("12:34:56")
+        self.time_display.display("00:00:00")
         self.time_display.setSegmentStyle(QLCDNumber.Flat)
         self.time_display.paintEvent = self._time_paintEvent
         self.time_display.mouseMoveEvent = None
@@ -73,7 +101,7 @@ class TimerControl(QFrame):
         # $Cash
         self.cash_display = QLCDNumber()
         self.cash_display.setDigitCount(8)
-        self.cash_display.display("123.00")
+        self.cash_display.display("0.00")
         self.cash_display.setSegmentStyle(QLCDNumber.Flat)
         self.cash_display.paintEvent = self._cash_paintEvent
 
@@ -114,14 +142,14 @@ class TimerControl(QFrame):
 
 
 
-
-
 if __name__ == "__main__":
-
-
+    import os, pt
+    os.chdir("..")
     app = QApplication([])
-    w = TimerControl()
-    w.show()
+    mw = QWidget()
+    mw.config = pt.read_config()
+    w = TimerCashControl(mw)
+    mw.show()
     app.exec()
         
 

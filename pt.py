@@ -4,6 +4,7 @@
 import os
 import sys
 import configparser
+import enum
 
 from PyQt5.QtWidgets import QApplication, QDesktopWidget
 from ui.main import MainWindow
@@ -11,11 +12,17 @@ from ui.main import MainWindow
 
 START_DIR = os.getcwd()
 MAIN_CONF_FILE = "main.conf"
+VERSION = "1.0.0"
+
+PLUGINS_MAIN_SECTION = "Main"
 PLUGINS_CONF_SECTION = "Plugins"
+TARIFFS_CONF_SECTION = "Tariffs"
 
 def read_config(filename=MAIN_CONF_FILE):
     cp = configparser.ConfigParser()
     cp.optionxform = str
+    #with open(filename, "r") as f:
+    #    cp.read(f)
     cp.read(filename)
     return cp
 
@@ -46,6 +53,5 @@ if __name__ == "__main__":
     if usb_notofication:
         pass
 
-
-    #app.setStyle("fusion")
+    app.setStyle("fusion")
     sys.exit(app.exec())

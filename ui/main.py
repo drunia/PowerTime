@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
 
         # Statusbar
         self.statusBar().setFont(menubar.font())
-        self.statusBar().showMessage("Вeрсия: " + self.config.get("DEFAULT", "version", fallback="N/A"))
+        self.statusBar().showMessage("Вeрсия: " + self.config.get("main", "version", fallback="N/A"))
 
     def save_config(self):
         import pt
