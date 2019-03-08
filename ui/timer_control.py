@@ -68,6 +68,8 @@ class TimerCashControl(QFrame):
         # UI
         self._init_ui()
 
+        self.display()
+
     # Timer
     def _timerEvent(self, evt: QTimerEvent):
         if self.stopped:
@@ -83,10 +85,13 @@ class TimerCashControl(QFrame):
                 self.time -= 1
 
         self.cash = Decimal(self.time) * Decimal(self.price/3600)
+        self.display()
 
+    # Display time & cash
+    def display(self):
         # Time
         if self.displayed:
-            str_time = str(datetime.timedelta(seconds=self.time))
+            str_time = "{:0>8}".format(str(datetime.timedelta(seconds=self.time)))
         else:
             str_time = ""
         # Cash
@@ -111,6 +116,7 @@ class TimerCashControl(QFrame):
         else:
             self.start_btn.setText("Возобновить")
             self.paused = True
+        self.display()
 
     # Stop timer
     def stop(self):
@@ -119,8 +125,12 @@ class TimerCashControl(QFrame):
 
         self.start_btn.setText("Старт")
 
+        self.displayed = True
         self.paused = False
         self.stopped = True
+        self.cash = 0
+        self.time = 0
+        self.display()
 
     def _init_ui(self):
         # Set minimum size
@@ -239,7 +249,10 @@ class TimerCashControl(QFrame):
         self.cash_display.setPalette(pallete)
 
         print(self.cash)
-        self.cash = str(int(float(self.cash))) if float(self.cash).is_integer() else str(round(self.cash, 2))
+        try:
+            self.cash = str(int(float(self.cash))) if float(self.cash).is_integer() else str(round(self.cash, 2))
+        except Exception as e:
+            print(e)
         self.cash_display.display(self.cash)
 
     # Cash display lost focus
@@ -250,7 +263,7 @@ class TimerCashControl(QFrame):
         self.cash_display.setPalette(pallete)
 
         self.cash = round(float(self.cash), 2)
-        self.cash_display.display(self.cash)
+        self.display()
 
     # Cash display key pressed
     def _cash_key_pressed(self, evt):
