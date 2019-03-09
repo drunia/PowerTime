@@ -35,10 +35,10 @@ class TimerCashControl(QFrame):
 
         # current control mode
         self.mode = ControlMode.FREE
-        self.time = 22*3600
-        self.cash = 123.50
+        self.time = 0
+        self.cash = 0
         self.price = 80
-        # can displayed time
+        # can displayed time (for blinking time in pause)
         self.displayed = True
         # timer paused
         self.paused = False
@@ -46,6 +46,9 @@ class TimerCashControl(QFrame):
         self.stopped = True
         self.timer_id = 0
         self.edit_time_mode = EditTimeMode.NO_EDIT
+
+        # last second for indicating (blinking) control mode
+        self.time_repaint_mode = datetime.datetime.now().second
 
         # Tariffs
         self.config: ConfigParser = self.parent().config
@@ -67,11 +70,10 @@ class TimerCashControl(QFrame):
 
         # UI
         self._init_ui()
-
         self.display()
 
     # Timer
-    def _timerEvent(self, evt: QTimerEvent):
+    def _timerEvent(self, evt):
         if self.stopped:
             self.displayed = True
             return
@@ -81,14 +83,20 @@ class TimerCashControl(QFrame):
             self.displayed = True
             if self.mode == ControlMode.FREE:
                 self.time += 1
+            elif self.time == 0:
+                # Time  is UP!
+                self.time_out()
             else:
                 self.time -= 1
-
-        self.cash = Decimal(self.time) * Decimal(self.price/3600)
         self.display()
+
+    def time_out(self):
+        self.stop()
+        QMessageBox.information(self, "Опа", "Время закончилось", QMessageBox.Ok)
 
     # Display time & cash
     def display(self):
+        self.cash = self.time * (self.price / 3600)
         # Time
         if self.displayed:
             str_time = "{:0>8}".format(str(datetime.timedelta(seconds=self.time)))
@@ -120,10 +128,19 @@ class TimerCashControl(QFrame):
 
     # Stop timer
     def stop(self):
+        if (self.cash or self.time) and \
+                QMessageBox.No == QMessageBox.question(
+                    self, "Завершить?", "Завершить текущий сеанс?",
+                    QMessageBox.Yes | QMessageBox.No
+                ): return
+
         self.time_display.setFocusPolicy(Qt.ClickFocus)
         self.cash_display.setFocusPolicy(Qt.ClickFocus)
 
         self.start_btn.setText("Старт")
+
+        # Set default mode to FREE
+        self.mode = ControlMode.FREE
 
         self.displayed = True
         self.paused = False
@@ -136,7 +153,7 @@ class TimerCashControl(QFrame):
         # Set minimum size
         self.setMinimumSize(330, 300)
         self.setFrameStyle(QFrame.Box)
-        self.resize(400,400)
+        self.resize(300,300)
 
         # Title (Number of channel)
         self.tittle_lb = QLabel()
@@ -150,7 +167,7 @@ class TimerCashControl(QFrame):
         self.time_display = QLCDNumber()
         self.time_display.setDigitCount(10)
         self.time_display.setSegmentStyle(QLCDNumber.Flat)
-        self.time_display.paintEvent = self._time_paintEvent
+        self.time_display.paintEvent = self._time_paint_event
         self.time_display.setAutoFillBackground(True)
         self.time_display.setFocusPolicy(Qt.ClickFocus)
 
@@ -168,7 +185,7 @@ class TimerCashControl(QFrame):
         self.cash_display.setDigitCount(8)
         self.cash_display.display(self.cash)
         self.cash_display.setSegmentStyle(QLCDNumber.Flat)
-        self.cash_display.paintEvent = self._cash_paintEvent
+        self.cash_display.paintEvent = self._cash_paint_event
         self.cash_display.setAutoFillBackground(True)
         self.cash_display.setFocusPolicy(Qt.ClickFocus)
 
@@ -187,6 +204,7 @@ class TimerCashControl(QFrame):
         self.start_btn = QPushButton("Старт")
         self.start_btn.setMinimumSize(100, 20)
         self.start_btn.clicked.connect(self.start)
+        self.start_btn.setAutoDefault(True)
 
         self.stop_btn = QPushButton("Стоп")
         self.stop_btn.setMinimumSize(100, 20)
@@ -206,16 +224,27 @@ class TimerCashControl(QFrame):
 
         root_lay.addLayout(controls_lay)
 
-
     # Paint cash icon in QLCDNumber
-    def _cash_paintEvent(self, evt: QPaintEvent):
+    def _cash_paint_event(self, evt: QPaintEvent):
+        # Blinking icon to indicate control mode
+        if not self.stopped and not self.paused and \
+                self.mode == ControlMode.CASH and \
+                datetime.datetime.now().second % 2:
+            QLCDNumber.paintEvent(self.cash_display, evt)
+            return
         p: QPainter = QPainter(self.cash_display)
         w, h = 32, 32
         p.drawPixmap(5, 5, w, h, self.cash_pixmap)
         QLCDNumber.paintEvent(self.cash_display, evt)
 
     # Paint clock icon in QLCDNumber
-    def _time_paintEvent(self, evt: QPaintEvent):
+    def _time_paint_event(self, evt: QPaintEvent):
+        # Blinking icon to indicate control mode
+        if not self.stopped and not self.paused and \
+                self.mode == ControlMode.TIME and \
+                datetime.datetime.now().second % 2:
+            QLCDNumber.paintEvent(self.time_display, evt)
+            return
         p: QPainter = QPainter(self.time_display)
         w, h = 32, 32
         p.drawPixmap(5, 5, w, h, self.time_pixmap)
@@ -223,8 +252,10 @@ class TimerCashControl(QFrame):
         # Edit time
         if self.edit_time_mode != EditTimeMode.NO_EDIT:
             pos_num = 0
-            if self.edit_time_mode == EditTimeMode.HOURS: pos_num = 2
-            if self.edit_time_mode == EditTimeMode.MINUTES: pos_num = 5
+            if self.edit_time_mode == EditTimeMode.HOURS:
+                pos_num = 2
+            if self.edit_time_mode == EditTimeMode.MINUTES:
+                pos_num = 5
             pen: QPen = p.pen()
             pen.setWidth(2)
             pen.setCapStyle(Qt.FlatCap)
@@ -244,9 +275,9 @@ class TimerCashControl(QFrame):
     # Cash display get focus
     def _cash_focus_in(self, evt):
         print("cash_focus_in")
-        pallete: QPalette = self.cash_display.palette()
-        pallete.setColor(QPalette.Background, QColor(255, 255, 255))
-        self.cash_display.setPalette(pallete)
+        palette: QPalette = self.cash_display.palette()
+        palette.setColor(QPalette.Background, QColor(255, 255, 255))
+        self.cash_display.setPalette(palette)
 
         print(self.cash)
         try:
@@ -261,9 +292,13 @@ class TimerCashControl(QFrame):
         pallete: QPalette = self.cash_display.palette()
         pallete.setColor(QPalette.Background, self.default_background_display_color)
         self.cash_display.setPalette(pallete)
-
         self.cash = round(float(self.cash), 2)
+        # Set control mode by cash
+        self.mode = ControlMode.CASH
+        # Calculate time by cash
+        self.time = self.cash / (self.price / 3600)
         self.display()
+        self.start_btn.setFocus()
 
     # Cash display key pressed
     def _cash_key_pressed(self, evt):
@@ -308,6 +343,10 @@ class TimerCashControl(QFrame):
         palette.setColor(QPalette.Background, self.default_background_display_color)
         self.time_display.setPalette(palette)
         self.edit_time_mode = EditTimeMode.NO_EDIT
+        self.display()
+        # Set control mode by time
+        self.mode = ControlMode.TIME
+        self.start_btn.setFocus()
 
     # Time display key pressed
     def _time_key_pressed(self, evt):
@@ -316,6 +355,7 @@ class TimerCashControl(QFrame):
             self.time_display.clearFocus()
         legal_keys = (Qt.Key_Left, Qt.Key_Right, Qt.Key_Plus, Qt.Key_Minus, Qt.Key_Enter, Qt.Key_Return)
         if not (Qt.Key_0 <= evt.key() <= Qt.Key_9) and evt.key() not in legal_keys: return
+
         if evt.key() == Qt.Key_Left or evt.key() == Qt.Key_Right:
             if self.edit_time_mode == EditTimeMode.HOURS:
                 self.edit_time_mode = EditTimeMode.MINUTES
@@ -325,6 +365,28 @@ class TimerCashControl(QFrame):
                 self.edit_time_mode = EditTimeMode.HOURS
                 self.time_display.repaint()
                 return
+        if evt.key() == Qt.Key_Plus:
+            if self.edit_time_mode == EditTimeMode.HOURS:
+                if self.time <= (23*3600)-60:
+                    self.time += 3600
+                else:
+                    self.edit_time_mode = EditTimeMode.MINUTES
+            if self.edit_time_mode == EditTimeMode.MINUTES:
+                if self.time <= (24*3600)-61:
+                    self.time += 60
+            self.display()
+            return
+        if evt.key() == Qt.Key_Minus:
+            if self.edit_time_mode == EditTimeMode.HOURS:
+                if self.time >= 3600:
+                    self.time -= 3600
+            if self.edit_time_mode == EditTimeMode.MINUTES:
+                if self.time >= 60:
+                    self.time -= 60
+            self.display()
+            return
+
+
 
 
 
