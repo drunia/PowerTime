@@ -59,6 +59,11 @@ class TimerCashControl(QFrame):
         self.stopped = True
         self.timer_id = 0
         self.edit_time_mode = EditTimeMode.NO_EDIT
+        # Edit peace of time
+        self.tmp_edit_time = {
+            "time_str": "",
+            "time_editable_peace": ""
+        }
 
         # last second for indicating (blinking) control mode
         self.time_repaint_mode = datetime.datetime.now().second
@@ -86,7 +91,7 @@ class TimerCashControl(QFrame):
         self.display()
 
         # Test timeout signal
-        self.switched.connect(lambda *x: print("Swich signal:", x))
+        self.switched.connect(lambda *x: print("Switch signal:", x))
 
     def _init_ui(self):
         # Set minimum size
@@ -232,7 +237,7 @@ class TimerCashControl(QFrame):
         if self.stopped: return
         if (self.cash or self.time) and \
             QMessageBox.No == QMessageBox.question(
-                self, "Завершить?", "Завершить текущий сеанс?",
+                self, self.tittle_lb.text(), "Завершить текущий сеанс?",
                 QMessageBox.Yes | QMessageBox.No
             ): return
 
@@ -388,6 +393,9 @@ class TimerCashControl(QFrame):
         # Set control mode by time
         self.mode = ControlMode.TIME
         self.cash_display.update()
+        # For edit peace
+        self.tmp_edit_time["time_str"] = "{:0>8}".format(str(datetime.timedelta(seconds=self.time)))
+
 
     # Time display lost focus
     def _time_focus_out(self, evt):
@@ -442,7 +450,10 @@ class TimerCashControl(QFrame):
             if self.time < 60:
                 self.time = 0
             self.display()
-            return
+
+        if Qt.Key_0 <= evt.key() <= Qt.Key_9:
+            self.tmp_edit_time["time_editable_peace"] = evt.text()
+
 
 
 if __name__ == "__main__":
