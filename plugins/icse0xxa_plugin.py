@@ -38,7 +38,7 @@ class ICSE0XXA_Plugin(PTBasePlugin):
                 "Num {} channel biggest of channels {} "
                 "on connected devices.".format(channel, len(self.__channels))
             )
-        dev, ch = self.__channels[channel-1]
+        dev, ch = self.__channels[channel]
         dev.switch_relay(ch, state)
 
 

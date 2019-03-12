@@ -24,6 +24,7 @@ class MainWindow(QMainWindow):
         self._load_plugins()
         self._setup_ui()
 
+
     def _setup_ui(self):
         self.setWindowTitle("PowerTime")
         self.resize(800, 600)
@@ -70,15 +71,26 @@ class MainWindow(QMainWindow):
             if plugin.get_info()["activated"]:
                 channels += plugin.get_channels_count()
 
-        channels = 4
+        #channels = 4
+
         cols = 4 if (channels // 5) > 0 else 2
         print("total channels:", channels)
         for channel in range(channels):
             control = TimerCashControl(self, channel)
             self.control_frame.layout().addWidget(control, (channel // cols), channel % cols)
             self.plugin_controls.append(control)
+            control.switched.connect(self.swichEvent)
             control.show()
         self.scroll_area.setWidget(self.control_frame)
+
+    def swichEvent(self, control, state: bool):
+        plugin: ICSE0XXA_Plugin = self.loaded_plugins[0]
+        try:
+            plugin.switch(control.channel, state)
+        except Exception as e:
+            print(e)
+
+
 
     def save_config(self):
         import pt
@@ -133,6 +145,11 @@ class MainWindow(QMainWindow):
         for plugin, plug_num in zip(self.plugins, range(len(self.plugins))):
             print("load plugin:", plug_num, plugin.__name__)
             self.loaded_plugins.append(plugin())
+            try:
+                self.loaded_plugins[plug_num].activate()
+            except Exception as e:
+                print("activate plugin error:", e)
+
 
     def _build_devices_actions(self):
         """Build actions for devices menu

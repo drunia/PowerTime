@@ -197,8 +197,7 @@ class TimerCashControl(QFrame):
             self.displayed = True
             if self.mode == ControlMode.FREE:
                 self.time += 1
-                if self.time == (24 * 3600):
-                    self.stop("Сеанс завершен.\nДлительность: 24 часа! ")
+                if self.time == (24 * 3600): self.stop()
             elif self.time == 0:
                 # Time  is UP!
                 self.time_out()
@@ -253,9 +252,9 @@ class TimerCashControl(QFrame):
         self.display()
 
     # Stop timer
-    def stop(self, free_limit=False):
+    def stop(self):
         if self.stopped: return
-        if (self.cash or self.time) and not free_limit and \
+        if (self.cash or self.time) and \
             QMessageBox.No == QMessageBox.question(
                 self, self.tittle_lb.text(), "Завершить текущий сеанс?",
                 QMessageBox.Yes | QMessageBox.No
@@ -383,7 +382,7 @@ class TimerCashControl(QFrame):
     # Cash display key pressed
     def _cash_key_pressed(self, evt):
         # In edit mode , we work ONLY with str type self.cash
-        if evt.key() == Qt.Key_Enter or evt.key() == Qt.Key_Return:
+        if evt.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape):
             self.cash_display.clearFocus()
         if (Qt.Key_0 <= evt.key() <= Qt.Key_9) or \
                 (evt.key() == Qt.Key_Period or evt.key() == Qt.Key_Backspace):
@@ -411,7 +410,7 @@ class TimerCashControl(QFrame):
 
     # Cash display mouse move
     def _cash_mouse_move(self, evt):
-        if evt.pos().x() < 32 and evt.pos().y() < 32:
+        if self.mode == ControlMode.CASH and evt.pos().x() < 32 and evt.pos().y() < 32:
             if self.cash_display.cursor() != Qt.PointingHandCursor:
                 self.cash_display.setCursor(Qt.PointingHandCursor)
         elif self.cash_display.cursor() != Qt.IBeamCursor:
@@ -442,7 +441,7 @@ class TimerCashControl(QFrame):
 
     # Time display key pressed
     def _time_key_pressed(self, evt):
-        if evt.key() == Qt.Key_Enter or evt.key() == Qt.Key_Return:
+        if evt.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape):
             self.time_display.clearFocus()
         legal_keys = (Qt.Key_Left, Qt.Key_Right, Qt.Key_Plus, Qt.Key_Minus, Qt.Key_Enter, Qt.Key_Return, Qt.Key_Delete)
         if not (Qt.Key_0 <= evt.key() <= Qt.Key_9) and evt.key() not in legal_keys: return
@@ -516,7 +515,7 @@ class TimerCashControl(QFrame):
 
     # Time display mouse move
     def _time_mouse_move(self, evt):
-        if evt.pos().x() < 32 and evt.pos().y() < 32:
+        if self.mode == ControlMode.TIME and evt.pos().x() < 32 and evt.pos().y() < 32:
             if self.time_display.cursor() != Qt.PointingHandCursor:
                 self.time_display.setCursor(Qt.PointingHandCursor)
         elif self.time_display.cursor() != Qt.IBeamCursor:
