@@ -12,7 +12,7 @@ import datetime, enum, pt
 class ControlMode(enum.Enum):
     """Enumeration for control modes"""
     # Control modes:
-    # FREE - work infinity
+    # FREE - work max to 24 hours
     # CASH - calculate time by taked cash
     # TIME - calculating time
     TIME = 0
@@ -47,6 +47,7 @@ class TimerCashControl(QFrame):
 
         # current control mode
         self.mode = ControlMode.FREE
+        self.session_time = 0
         self.time = 0
         self.cash = 0
         self.price = 80
@@ -92,7 +93,11 @@ class TimerCashControl(QFrame):
         self.display()
 
         # Test timeout signal
-        self.switched.connect(lambda *x: print("Switch signal:", x))
+        import time
+        self.switched.connect(
+            lambda *x:
+            print("Switch signal:", x)
+        )
 
     def _init_ui(self):
         # Set minimum size
@@ -126,6 +131,9 @@ class TimerCashControl(QFrame):
         self.time_display.focusOutEvent = self._time_focus_out
         self.time_display.keyPressEvent = self._time_key_pressed
 
+        self.time_display.setMouseTracking(True)
+        self.time_display.mouseMoveEvent = self._time_mouse_move
+
         # $Cash
         self.cash_display = QLCDNumber()
         self.cash_display.setDigitCount(8)
@@ -142,6 +150,9 @@ class TimerCashControl(QFrame):
         self.cash_display.focusInEvent = self._cash_focus_in
         self.cash_display.focusOutEvent = self._cash_focus_out
         self.cash_display.keyPressEvent = self._cash_key_pressed
+
+        self.cash_display.setMouseTracking(True)
+        self.cash_display.mouseMoveEvent = self._cash_mouse_move
 
         # Get default display background color
         p: QPalette = self.cash_display.palette()
@@ -179,9 +190,15 @@ class TimerCashControl(QFrame):
         if self.paused:
             self.displayed = not self.displayed
         else:
+            # Audit session
+            if self.time > self.session_time:
+                self.session_time = self.time
+
             self.displayed = True
             if self.mode == ControlMode.FREE:
                 self.time += 1
+                if self.time == (24 * 3600):
+                    self.stop("Сеанс завершен.\nДлительность: 24 часа! ")
             elif self.time == 0:
                 # Time  is UP!
                 self.time_out()
@@ -195,7 +212,7 @@ class TimerCashControl(QFrame):
 
     # Display time & cash
     def display(self):
-        self.cash = self.time * (self.price / 3600)
+        self.cash = round(self.time * (self.price / 3600), 2)
         # Time
         if self.displayed:
             str_time = "{:0>8}".format(str(datetime.timedelta(seconds=self.time)))
@@ -209,18 +226,20 @@ class TimerCashControl(QFrame):
         self.cash_display.display(str_cash)
         self.cash_display.update()
 
+        print("self.session_time:", self.session_time, "self.mode =", self.mode)
+
     # Start / Pause timer
     def start(self):
         self.time_display.setFocusPolicy(Qt.NoFocus)
         self.cash_display.setFocusPolicy(Qt.NoFocus)
 
-        if self.cash == 0 and self.time == 0:
-            self.mode = ControlMode.FREE
-
         if self.stopped:
             self.stopped = False
             self.start_btn.setText("Пауза")
             self.switched.emit(self, True)
+            self.session_time = 0
+            if self.cash == 0 and self.time == 0:
+                self.mode = ControlMode.FREE
             return
 
         if self.paused:
@@ -234,13 +253,13 @@ class TimerCashControl(QFrame):
         self.display()
 
     # Stop timer
-    def stop(self):
+    def stop(self, free_limit=False):
         if self.stopped: return
-        if (self.cash or self.time) and \
-                QMessageBox.No == QMessageBox.question(
-            self, self.tittle_lb.text(), "Завершить текущий сеанс?",
-            QMessageBox.Yes | QMessageBox.No
-        ): return
+        if (self.cash or self.time) and not free_limit and \
+            QMessageBox.No == QMessageBox.question(
+                self, self.tittle_lb.text(), "Завершить текущий сеанс?",
+                QMessageBox.Yes | QMessageBox.No
+            ): return
 
         self.time_display.setFocusPolicy(Qt.ClickFocus)
         self.cash_display.setFocusPolicy(Qt.ClickFocus)
@@ -253,11 +272,14 @@ class TimerCashControl(QFrame):
         self.displayed = True
         self.paused = False
         self.stopped = True
+
+        # Before clear self.cash & self.time we send signal
+        # for calculating difference for cash back in main app
+        self.switched.emit(self, False)
+
         self.cash = 0
         self.time = 0
         self.display()
-
-        self.switched.emit(self, False)
 
     # Paint cash icon in QLCDNumber
     def _cash_paint_event(self, evt: QPaintEvent):
@@ -346,11 +368,13 @@ class TimerCashControl(QFrame):
         pallete: QPalette = self.cash_display.palette()
         pallete.setColor(QPalette.Background, self.default_background_display_color)
         self.cash_display.setPalette(pallete)
-        self.cash = round(float(self.cash), 2)
+
+        self.cash = float(self.cash)
         # Check max cash by 24 hours
         max_cash = ((24 * 3600) - 1) * (self.price / 3600)
         if self.cash > max_cash:
             self.cash = max_cash
+
         # Calculate time by cash
         self.time = round(self.cash / (self.price / 3600))
         self.display()
@@ -382,7 +406,18 @@ class TimerCashControl(QFrame):
             else:
                 cash += evt.text()
             self.cash = cash if len(cash) > 0 else "0"
-            self.cash_display.display(self.cash)
+        if evt.key() == Qt.Key_Delete: self.cash = "0"
+        self.cash_display.display(self.cash)
+
+    # Cash display mouse move
+    def _cash_mouse_move(self, evt):
+        if evt.pos().x() < 32 and evt.pos().y() < 32:
+            if self.cash_display.cursor() != Qt.PointingHandCursor:
+                self.cash_display.setCursor(Qt.PointingHandCursor)
+        elif self.cash_display.cursor() != Qt.IBeamCursor:
+            self.cash_display.setCursor(Qt.IBeamCursor)
+
+
 
     # Time display get focus
     def _time_focus_in(self, evt):
@@ -409,33 +444,38 @@ class TimerCashControl(QFrame):
     def _time_key_pressed(self, evt):
         if evt.key() == Qt.Key_Enter or evt.key() == Qt.Key_Return:
             self.time_display.clearFocus()
-        legal_keys = (Qt.Key_Left, Qt.Key_Right, Qt.Key_Plus, Qt.Key_Minus, Qt.Key_Enter, Qt.Key_Return)
+        legal_keys = (Qt.Key_Left, Qt.Key_Right, Qt.Key_Plus, Qt.Key_Minus, Qt.Key_Enter, Qt.Key_Return, Qt.Key_Delete)
         if not (Qt.Key_0 <= evt.key() <= Qt.Key_9) and evt.key() not in legal_keys: return
 
-        if Qt.Key_0 <= evt.key() <= Qt.Key_9:
+        if Qt.Key_0 <= evt.key() <= Qt.Key_9 or evt.key() == Qt.Key_Delete:
             # Time to str for edit peaces
             self.tmp_edit_time["time_str"] = "{:0>8}".format(str(datetime.timedelta(seconds=self.time)))
             self.tmp_edit_time["h_peace"] = self.tmp_edit_time["time_str"][:2]
             self.tmp_edit_time["m_peace"] = self.tmp_edit_time["time_str"][3:5]
             if self.edit_time_mode == EditTimeMode.HOURS:
-                if self.tmp_edit_time["h_peace"][-1] in "012":
-                    if self.tmp_edit_time["h_peace"][-1] == "2" and evt.text() not in "0123":
-                        pass
+                if evt.key() == Qt.Key_Delete:
+                    self.tmp_edit_time["h_peace"] = "00"
+                else:
+                    if self.tmp_edit_time["h_peace"][-1] in "012":
+                        if self.tmp_edit_time["h_peace"][-1] == "2" and evt.text() not in "0123":
+                            pass
+                        else:
+                            self.tmp_edit_time["h_peace"] = self.tmp_edit_time["h_peace"][-1] + evt.text()
                     else:
-                        self.tmp_edit_time["h_peace"] = self.tmp_edit_time["h_peace"][-1] + evt.text()
-                else:
-                    self.tmp_edit_time["h_peace"] = "0" + evt.text()
+                        self.tmp_edit_time["h_peace"] = "0" + evt.text()
             if self.edit_time_mode == EditTimeMode.MINUTES:
-                if self.tmp_edit_time["m_peace"][-1] in "012345":
-                    self.tmp_edit_time["m_peace"] = self.tmp_edit_time["m_peace"][-1] + evt.text()
+                if evt.key() == Qt.Key_Delete:
+                    self.tmp_edit_time["m_peace"] = "00"
                 else:
-                    self.tmp_edit_time["m_peace"] = "0" + evt.text()
+                    if self.tmp_edit_time["m_peace"][-1] in "012345":
+                        self.tmp_edit_time["m_peace"] = self.tmp_edit_time["m_peace"][-1] + evt.text()
+                    else:
+                        self.tmp_edit_time["m_peace"] = "0" + evt.text()
             # Str to time, after edit
             self.time = (int(self.tmp_edit_time["h_peace"]) * 3600) + \
                         (int(self.tmp_edit_time["m_peace"]) * 60) + \
                         int(self.tmp_edit_time["time_str"][6:8])
             self.display()
-
         if evt.key() == Qt.Key_Left or evt.key() == Qt.Key_Right:
             if self.edit_time_mode == EditTimeMode.HOURS:
                 self.edit_time_mode = EditTimeMode.MINUTES
@@ -472,6 +512,15 @@ class TimerCashControl(QFrame):
             if self.time < 60:
                 self.time = 0
             self.display()
+            return
+
+    # Time display mouse move
+    def _time_mouse_move(self, evt):
+        if evt.pos().x() < 32 and evt.pos().y() < 32:
+            if self.time_display.cursor() != Qt.PointingHandCursor:
+                self.time_display.setCursor(Qt.PointingHandCursor)
+        elif self.time_display.cursor() != Qt.IBeamCursor:
+            self.time_display.setCursor(Qt.IBeamCursor)
 
 
 if __name__ == "__main__":
