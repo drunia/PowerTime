@@ -1,6 +1,6 @@
 #!/usb/bin/env python3
 # -*- coding: utf-8 -*-
-
+from builtins import print
 
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QFont, QPaintEvent, QPainter, QPixmap, QPalette, QColor, QPen
@@ -413,11 +413,16 @@ class TimerCashControl(QFrame):
         if not (Qt.Key_0 <= evt.key() <= Qt.Key_9) and evt.key() not in legal_keys: return
 
         if Qt.Key_0 <= evt.key() <= Qt.Key_9:
-            # Time to str for edit peace
+            # Time to str for edit peaces
             self.tmp_edit_time["time_str"] = "{:0>8}".format(str(datetime.timedelta(seconds=self.time)))
+            self.tmp_edit_time["h_peace"] = self.tmp_edit_time["time_str"][:2]
+            self.tmp_edit_time["m_peace"] = self.tmp_edit_time["time_str"][3:5]
             if self.edit_time_mode == EditTimeMode.HOURS:
                 if self.tmp_edit_time["h_peace"][-1] in "012":
-                    self.tmp_edit_time["h_peace"] = self.tmp_edit_time["h_peace"][-1] + evt.text()
+                    if self.tmp_edit_time["h_peace"][-1] == "2" and evt.text() not in "0123":
+                        pass
+                    else:
+                        self.tmp_edit_time["h_peace"] = self.tmp_edit_time["h_peace"][-1] + evt.text()
                 else:
                     self.tmp_edit_time["h_peace"] = "0" + evt.text()
             if self.edit_time_mode == EditTimeMode.MINUTES:
@@ -428,7 +433,7 @@ class TimerCashControl(QFrame):
             # Str to time, after edit
             self.time = (int(self.tmp_edit_time["h_peace"]) * 3600) + \
                         (int(self.tmp_edit_time["m_peace"]) * 60) + \
-                        int(self.tmp_edit_time["time_str"][6:7])
+                        int(self.tmp_edit_time["time_str"][6:8])
             self.display()
 
         if evt.key() == Qt.Key_Left or evt.key() == Qt.Key_Right:
