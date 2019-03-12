@@ -61,8 +61,9 @@ class TimerCashControl(QFrame):
         self.edit_time_mode = EditTimeMode.NO_EDIT
         # Edit peace of time
         self.tmp_edit_time = {
-            "time_str": "",
-            "time_editable_peace": ""
+            "time_str": "00:00:00",
+            "h_peace": "00",
+            "m_peace": "00"
         }
 
         # last second for indicating (blinking) control mode
@@ -101,7 +102,7 @@ class TimerCashControl(QFrame):
 
         # Title (Number of channel)
         self.tittle_lb = QLabel()
-        self.tittle_lb.setText("Канал " + str(self.channel+1))
+        self.tittle_lb.setText("Канал " + str(self.channel + 1))
         f: QFont = self.tittle_lb.font()
         f.setPointSize(20)
         self.tittle_lb.setFont(f)
@@ -236,10 +237,10 @@ class TimerCashControl(QFrame):
     def stop(self):
         if self.stopped: return
         if (self.cash or self.time) and \
-            QMessageBox.No == QMessageBox.question(
-                self, self.tittle_lb.text(), "Завершить текущий сеанс?",
-                QMessageBox.Yes | QMessageBox.No
-            ): return
+                QMessageBox.No == QMessageBox.question(
+            self, self.tittle_lb.text(), "Завершить текущий сеанс?",
+            QMessageBox.Yes | QMessageBox.No
+        ): return
 
         self.time_display.setFocusPolicy(Qt.ClickFocus)
         self.cash_display.setFocusPolicy(Qt.ClickFocus)
@@ -393,9 +394,6 @@ class TimerCashControl(QFrame):
         # Set control mode by time
         self.mode = ControlMode.TIME
         self.cash_display.update()
-        # For edit peace
-        self.tmp_edit_time["time_str"] = "{:0>8}".format(str(datetime.timedelta(seconds=self.time)))
-
 
     # Time display lost focus
     def _time_focus_out(self, evt):
@@ -413,6 +411,25 @@ class TimerCashControl(QFrame):
             self.time_display.clearFocus()
         legal_keys = (Qt.Key_Left, Qt.Key_Right, Qt.Key_Plus, Qt.Key_Minus, Qt.Key_Enter, Qt.Key_Return)
         if not (Qt.Key_0 <= evt.key() <= Qt.Key_9) and evt.key() not in legal_keys: return
+
+        if Qt.Key_0 <= evt.key() <= Qt.Key_9:
+            # Time to str for edit peace
+            self.tmp_edit_time["time_str"] = "{:0>8}".format(str(datetime.timedelta(seconds=self.time)))
+            if self.edit_time_mode == EditTimeMode.HOURS:
+                if self.tmp_edit_time["h_peace"][-1] in "012":
+                    self.tmp_edit_time["h_peace"] = self.tmp_edit_time["h_peace"][-1] + evt.text()
+                else:
+                    self.tmp_edit_time["h_peace"] = "0" + evt.text()
+            if self.edit_time_mode == EditTimeMode.MINUTES:
+                if self.tmp_edit_time["m_peace"][-1] in "012345":
+                    self.tmp_edit_time["m_peace"] = self.tmp_edit_time["m_peace"][-1] + evt.text()
+                else:
+                    self.tmp_edit_time["m_peace"] = "0" + evt.text()
+            # Str to time, after edit
+            self.time = (int(self.tmp_edit_time["h_peace"]) * 3600) + \
+                        (int(self.tmp_edit_time["m_peace"]) * 60) + \
+                        int(self.tmp_edit_time["time_str"][6:7])
+            self.display()
 
         if evt.key() == Qt.Key_Left or evt.key() == Qt.Key_Right:
             if self.edit_time_mode == EditTimeMode.HOURS:
@@ -450,10 +467,6 @@ class TimerCashControl(QFrame):
             if self.time < 60:
                 self.time = 0
             self.display()
-
-        if Qt.Key_0 <= evt.key() <= Qt.Key_9:
-            self.tmp_edit_time["time_editable_peace"] = evt.text()
-
 
 
 if __name__ == "__main__":
