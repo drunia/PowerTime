@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("PowerTime")
         self.resize(800, 600)
 
+
         # Main menu
         menubar: QMenuBar = self.menuBar()
         menufont: QFont = menubar.font()
@@ -71,7 +72,7 @@ class MainWindow(QMainWindow):
             if plugin.get_info()["activated"]:
                 channels += plugin.get_channels_count()
 
-        #channels = 4
+        channels = 4
 
         cols = 4 if (channels // 5) > 0 else 2
         print("total channels:", channels)
@@ -80,7 +81,6 @@ class MainWindow(QMainWindow):
             self.control_frame.layout().addWidget(control, (channel // cols), channel % cols)
             self.plugin_controls.append(control)
             control.switched.connect(self.swichEvent)
-            control.show()
         self.scroll_area.setWidget(self.control_frame)
 
     def swichEvent(self, control, state: bool):
@@ -250,5 +250,4 @@ if __name__ == "__main__":
     app = QApplication([])
     mw = MainWindow(ConfigParser())
     mw.show()
-
     app.exec()

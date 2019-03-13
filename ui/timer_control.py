@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from builtins import print
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QPoint, QRect
 from PyQt5.QtGui import QFont, QPaintEvent, QPainter, QPixmap, QPalette, QColor, QPen
 from PyQt5.QtWidgets import *
 from configparser import ConfigParser
@@ -81,7 +81,7 @@ class TimerCashControl(QFrame):
 
         # Timer
         self.timer = QTimer()
-        self.timer.timerEvent = self._timerEvent
+        self.timer.timerEvent = self._timer_event
         self.timer_id = self.timer.startTimer(100, Qt.PreciseTimer)
 
         # Icons
@@ -133,6 +133,7 @@ class TimerCashControl(QFrame):
 
         self.time_display.setMouseTracking(True)
         self.time_display.mouseMoveEvent = self._time_mouse_move
+        self.time_display.mousePressEvent = self._time_mouse_pressed
 
         # $Cash
         self.cash_display = QLCDNumber()
@@ -153,6 +154,7 @@ class TimerCashControl(QFrame):
 
         self.cash_display.setMouseTracking(True)
         self.cash_display.mouseMoveEvent = self._cash_mouse_move
+        self.cash_display.mousePressEvent = self._cash_mouse_pressed
 
         # Get default display background color
         p: QPalette = self.cash_display.palette()
@@ -183,7 +185,7 @@ class TimerCashControl(QFrame):
         root_lay.addLayout(controls_lay)
 
     # Timer
-    def _timerEvent(self, evt):
+    def _timer_event(self, evt):
         if self.stopped:
             self.displayed = True
             return
@@ -197,7 +199,8 @@ class TimerCashControl(QFrame):
             self.displayed = True
             if self.mode == ControlMode.FREE:
                 self.time += 1
-                if self.time == (24 * 3600): self.stop()
+                if self.time == (24 * 3600):
+                    self.stop()
             elif self.time == 0:
                 # Time  is UP!
                 self.time_out()
@@ -207,7 +210,7 @@ class TimerCashControl(QFrame):
 
     def time_out(self):
         self.stop()
-        QMessageBox.information(self, self.tittle_lb.text(), "Время вышло!", QMessageBox.Ok)
+        QMessageBox.information(self.parent(), self.tittle_lb.text(), "Время вышло!", QMessageBox.Ok)
 
     # Display time & cash
     def display(self):
@@ -225,7 +228,7 @@ class TimerCashControl(QFrame):
         self.cash_display.display(str_cash)
         self.cash_display.update()
 
-        print("self.session_time:", self.session_time, "self.mode =", self.mode)
+        # print("self.session_time:", self.session_time, "self.mode =", self.mode)
 
     # Start / Pause timer
     def start(self):
@@ -249,16 +252,17 @@ class TimerCashControl(QFrame):
             self.start_btn.setText("Возобновить")
             self.paused = True
             self.switched.emit(self, False)
+
         self.display()
 
     # Stop timer
     def stop(self):
         if self.stopped: return
         if (self.cash or self.time) and \
-            QMessageBox.No == QMessageBox.question(
-                self, self.tittle_lb.text(), "Завершить текущий сеанс?",
-                QMessageBox.Yes | QMessageBox.No
-            ): return
+                QMessageBox.No == QMessageBox.question(
+            self.parent(), self.tittle_lb.text(), "Завершить текущий сеанс?",
+            QMessageBox.Yes | QMessageBox.No
+        ): return
 
         self.time_display.setFocusPolicy(Qt.ClickFocus)
         self.cash_display.setFocusPolicy(Qt.ClickFocus)
@@ -410,13 +414,19 @@ class TimerCashControl(QFrame):
 
     # Cash display mouse move
     def _cash_mouse_move(self, evt):
-        if self.mode == ControlMode.CASH and evt.pos().x() < 32 and evt.pos().y() < 32:
+        if self.mode == ControlMode.CASH and not self.stopped and \
+                evt.pos().x() < 32 and evt.pos().y() < 32:
             if self.cash_display.cursor() != Qt.PointingHandCursor:
                 self.cash_display.setCursor(Qt.PointingHandCursor)
+                QToolTip.showText(evt.globalPos(), "Добавить деньги", self.cash_display)
         elif self.cash_display.cursor() != Qt.IBeamCursor:
             self.cash_display.setCursor(Qt.IBeamCursor)
 
-
+    # Cash display mouse pressed
+    def _cash_mouse_pressed(self, evt):
+        if self.mode == ControlMode.CASH and evt.button() == Qt.LeftButton and \
+                evt.x() < 32 and evt.y() < 32:
+            AddDialog(self)
 
     # Time display get focus
     def _time_focus_in(self, evt):
@@ -515,11 +525,55 @@ class TimerCashControl(QFrame):
 
     # Time display mouse move
     def _time_mouse_move(self, evt):
-        if self.mode == ControlMode.TIME and evt.pos().x() < 32 and evt.pos().y() < 32:
+        if self.mode == ControlMode.TIME and not self.stopped and \
+                evt.pos().x() < 32 and evt.pos().y() < 32:
             if self.time_display.cursor() != Qt.PointingHandCursor:
                 self.time_display.setCursor(Qt.PointingHandCursor)
+                QToolTip.showText(evt.globalPos(), "Добавить время", self.time_display)
         elif self.time_display.cursor() != Qt.IBeamCursor:
             self.time_display.setCursor(Qt.IBeamCursor)
+
+    # Cash display mouse pressed
+    def _time_mouse_pressed(self, evt):
+        if self.mode == ControlMode.TIME and evt.button() == Qt.LeftButton and \
+                evt.x() < 32 and evt.y() < 32:
+            AddDialog(self)
+
+
+class AddDialog(QDialog):
+    """ Adding tome or cash dialog """
+    def __init__(self, parent):
+        super().__init__(parent)
+        self._init_ui()
+
+    def _init_ui(self):
+        self.setFixedSize(500, 300)
+        self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
+
+        # Root layout
+        vbox_lay = QVBoxLayout(self)
+
+        # Add button
+        self.add_btn = QPushButton("Добавить")
+        self.add_btn.setFixedSize(120, 30)
+        self.add_btn.clicked.connect(self._add_btn_click)
+        vbox_lay.addWidget(self.add_btn, alignment=Qt.AlignRight | Qt.AlignBottom)
+
+        if self.parent().mode == ControlMode.CASH:
+            print("CASH")
+        else:
+            print("TIME")
+        self.show()
+
+    def _add_btn_click(self):
+        inputted_value = 100
+        if self.parent().mode == ControlMode.CASH:
+            time = round((inputted_value / self.parent().price) * 3600)
+        else:
+            time = inputted_value
+        self.parent().time += time
+        self.close()
+
 
 
 if __name__ == "__main__":
