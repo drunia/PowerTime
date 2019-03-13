@@ -208,7 +208,8 @@ def test():
     while True:
         r = input("Try switch relay, format: [numstate], where num - num of relay, state - switch state[0/1]:")
         try:
-            if r == "": sys.exit(0)
+            if r == "":
+                sys.exit(0)
             n, s = r[0], r[1]
             d.switch_relay(int(n), bool(int(s)))
         except Exception as ex:

@@ -1,4 +1,4 @@
-#!/usb/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from PyQt5.QtWidgets import *
@@ -23,6 +23,7 @@ class MainWindow(QMainWindow):
 
         self._load_plugins()
         self._setup_ui()
+        self._activate_plugins_on_start()
 
 
     def _setup_ui(self):
@@ -61,7 +62,8 @@ class MainWindow(QMainWindow):
 
         # Statusbar
         self.statusBar().setFont(menubar.font())
-        self.statusBar().showMessage("Вeрсия: " + self.config.get("main", "version", fallback="N/A"))
+        self.statusBar().showMessage("Вeрсия: " + qApp.applicationVersion())
+        self.statusBar()
 
         self.add_plugin_controls()
 
@@ -89,8 +91,6 @@ class MainWindow(QMainWindow):
             plugin.switch(control.channel, state)
         except Exception as e:
             print(e)
-
-
 
     def save_config(self):
         import pt
@@ -145,10 +145,20 @@ class MainWindow(QMainWindow):
         for plugin, plug_num in zip(self.plugins, range(len(self.plugins))):
             print("load plugin:", plug_num, plugin.__name__)
             self.loaded_plugins.append(plugin())
-            try:
-                self.loaded_plugins[plug_num].activate()
-            except Exception as e:
-                print("activate plugin error:", e)
+
+    # Activates plugin from main.conf file
+    def _activate_plugins_on_start(self):
+        import pt
+        if self.config.has_section(pt.PLUGINS_CONF_SECTION):
+            for plugin, active_state in self.config[pt.PLUGINS_CONF_SECTION].items():
+                if active_state:
+                    for p in self.loaded_plugins:
+                        if p.get_info()["plugin_name"] == plugin:
+                            try:
+                                p.activate()
+                            except Exception as e:
+                                print(e)
+        del pt
 
 
     def _build_devices_actions(self):
@@ -244,7 +254,7 @@ class PluginSettings(QDialog):
 if __name__ == "__main__":
     import sys
 
-    os.chdir("..")
+    #os.chdir("..")
     print(os.getcwd())
 
     app = QApplication([])
