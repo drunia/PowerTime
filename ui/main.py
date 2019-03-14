@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import QSize, Qt
 from configparser import ConfigParser
-from plugins.icse0xxa_plugin import ICSE0XXA_Plugin
+from plugins.icse0xxa_plugin import PTBasePlugin
 from ui.timer_control import *
 import os
 
@@ -17,19 +17,18 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.config = config
-        self.plugins = self.find_plugins()
         self.loaded_plugins = []
         self.plugin_controls = []
 
+        self.plugins = self.find_plugins()
         self._load_plugins()
+
         self._setup_ui()
         self._activate_plugins_on_start()
-
 
     def _setup_ui(self):
         self.setWindowTitle("PowerTime")
         self.resize(800, 600)
-
 
         # Main menu
         menubar: QMenuBar = self.menuBar()
@@ -82,19 +81,24 @@ class MainWindow(QMainWindow):
             control = TimerCashControl(self, channel)
             self.control_frame.layout().addWidget(control, (channel // cols), channel % cols)
             self.plugin_controls.append(control)
-            control.switched.connect(self.swichEvent)
+            control.switched.connect(self.switch_event)
         self.scroll_area.setWidget(self.control_frame)
 
-    def swichEvent(self, control, state: bool):
-        plugin: ICSE0XXA_Plugin = self.loaded_plugins[0]
+    def switch_event(self, control, state: bool):
         try:
+            plugin: PTBasePlugin = self.loaded_plugins[0]
             plugin.switch(control.channel, state)
         except Exception as e:
             print(e)
 
+    def _get_activated_plugin(self):
+        for p in self.loaded_plugins:
+            if p.get_info()["activated"]:
+                return p
+        return None
+
     def save_config(self):
         import pt
-
         # Plugins
         for plugin in self.loaded_plugins:
             try:
@@ -115,7 +119,7 @@ class MainWindow(QMainWindow):
 
     def devices_menu_show(self):
         for action in self.menu_devices.actions():
-            plugin: ICSE0XXA_Plugin = action.data()
+            plugin: PTBasePlugin = action.data()
             if plugin.get_info()["activated"]:
                 action.setIcon(QIcon("./res/on.ico"))
             else:
@@ -139,6 +143,7 @@ class MainWindow(QMainWindow):
                         plugins.append(cls[1])
                         break
         del pkgutil, inspect
+        print("find_plugins():", len(plugins))
         return plugins
 
     def _load_plugins(self):
@@ -155,6 +160,7 @@ class MainWindow(QMainWindow):
                     for p in self.loaded_plugins:
                         if p.get_info()["plugin_name"] == plugin:
                             try:
+                                print("_activate_plugins_on_start():", plugin)
                                 p.activate()
                             except Exception as e:
                                 print(e)
@@ -199,9 +205,9 @@ class PluginSettings(QDialog):
     def setup_ui(self):
         self.setWindowModality(Qt.WindowModal)
         self.setWindowTitle(self.plugin.get_info()["plugin_name"])
+        self.setMaximumSize(800, 600)
 
         plugin_frame = QFrame()
-        plugin_frame.setMaximumSize(1280, 1024)
         plugin_frame.setMinimumSize(400, 200)
         self.plugin.build_settings(plugin_frame)
 
@@ -239,7 +245,7 @@ class PluginSettings(QDialog):
 
     def activate_plugin(self):
         try:
-            self.plugin: ICSE0XXA_Plugin
+            self.plugin: PTBasePlugin
             if not self.plugin.get_info()["activated"]:
                 self.plugin.activate()
                 self.activate_btn.setIcon(QIcon("./res/on.ico"))
@@ -254,7 +260,7 @@ class PluginSettings(QDialog):
 if __name__ == "__main__":
     import sys
 
-    #os.chdir("..")
+    os.chdir("..")
     print(os.getcwd())
 
     app = QApplication([])

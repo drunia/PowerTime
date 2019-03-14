@@ -93,7 +93,6 @@ class TimerCashControl(QFrame):
         self.display()
 
         # Test timeout signal
-        import time
         self.switched.connect(
             lambda *x:
             print("Switch signal:", x)
@@ -307,6 +306,7 @@ class TimerCashControl(QFrame):
     # Paint clock icon in QLCDNumber
     def _time_paint_event(self, evt: QPaintEvent):
         p: QPainter = QPainter(self.time_display)
+        p.setRenderHints(p.renderHints() | QPainter.Antialiasing)
         w, h = 0, self.time_display.height() - (p.fontMetrics().height() / 2)
         p.drawText((p.fontMetrics().height() / 2), h, "Время")
 
@@ -379,7 +379,7 @@ class TimerCashControl(QFrame):
             self.cash = max_cash
 
         # Calculate time by cash
-        self.time = round(self.cash / (self.price / 3600))
+        self.time = round(self.cash / self.price * 3600)
         self.display()
         self.start_btn.setFocus()
 
@@ -424,8 +424,8 @@ class TimerCashControl(QFrame):
 
     # Cash display mouse pressed
     def _cash_mouse_pressed(self, evt):
-        if self.mode == ControlMode.CASH and evt.button() == Qt.LeftButton and \
-                evt.x() < 32 and evt.y() < 32:
+        if self.mode == ControlMode.CASH and not self.stopped and \
+                evt.button() == Qt.LeftButton and evt.x() < 32 and evt.y() < 32:
             AddDialog(self)
 
     # Time display get focus
@@ -535,8 +535,8 @@ class TimerCashControl(QFrame):
 
     # Cash display mouse pressed
     def _time_mouse_pressed(self, evt):
-        if self.mode == ControlMode.TIME and evt.button() == Qt.LeftButton and \
-                evt.x() < 32 and evt.y() < 32:
+        if self.mode == ControlMode.TIME and not self.stopped and \
+                evt.button() == Qt.LeftButton and evt.x() < 32 and evt.y() < 32:
             AddDialog(self)
 
 
@@ -548,7 +548,7 @@ class AddDialog(QDialog):
 
     def _init_ui(self):
         self.setFixedSize(500, 300)
-        self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
+        self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint | Qt.WindowModal)
 
         # Root layout
         vbox_lay = QVBoxLayout(self)
@@ -568,7 +568,7 @@ class AddDialog(QDialog):
     def _add_btn_click(self):
         inputted_value = 100
         if self.parent().mode == ControlMode.CASH:
-            time = round((inputted_value / self.parent().price) * 3600)
+            time = round(inputted_value / self.parent().price * 3600)
         else:
             time = inputted_value
         self.parent().time += time
