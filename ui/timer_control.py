@@ -542,28 +542,58 @@ class TimerCashControl(QFrame):
 
 class AddDialog(QDialog):
     """ Adding tome or cash dialog """
+
     def __init__(self, parent):
         super().__init__(parent)
+        self.icon = None
+        if parent.mode == ControlMode.TIME:
+            self.icon = QPixmap("./res/clock.png")
+        else:
+            self.icon = QPixmap("./res/cash.png")
         self._init_ui()
 
     def _init_ui(self):
-        self.setFixedSize(500, 300)
-        self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint | Qt.WindowModal)
+        self.setFixedSize(380, 240)
+        self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
+        self.setModal(True)
 
         # Root layout
         vbox_lay = QVBoxLayout(self)
+        vbox_lay.setContentsMargins(10, 10, 10, 10)
 
         # Add button
         self.add_btn = QPushButton("Добавить")
         self.add_btn.setFixedSize(120, 30)
         self.add_btn.clicked.connect(self._add_btn_click)
+        self.add_btn.setDefault(True)
         vbox_lay.addWidget(self.add_btn, alignment=Qt.AlignRight | Qt.AlignBottom)
 
-        if self.parent().mode == ControlMode.CASH:
-            print("CASH")
+        self.input_lcd = QLCDNumber(self)
+        self.input_lcd.setStyleSheet("background: white;")
+        self.input_lcd.setFixedSize(self.width() - 20, (self.height() // 10) * 4)
+        self.input_lcd.paintEvent = self._input_lcd_paint
+        self.input_lcd.setDigitCount(8)
+
+        self.title_lb = QLabel()
+        f: QFont = self.title_lb.font()
+        f.setPointSize(16)
+        self.title_lb.setFont(f)
+        self.title_lb.setWordWrap(True)
+
+        vbox_lay.insertWidget(0, self.input_lcd, alignment=Qt.AlignBottom)
+        vbox_lay.insertWidget(0, self.title_lb, alignment=Qt.AlignCenter)
+
+        if self.parent().mode == ControlMode.TIME:
+            self.title_lb.setText("Больше времени?  Без проблем!")
         else:
-            print("TIME")
+            self.title_lb.setText("Кто платит - тот и заказывает музыку!")
+
         self.show()
+
+    def _input_lcd_paint(self, e):
+        p = QPainter(self.input_lcd)
+        p.drawPixmap(10, (self.input_lcd.height() - self.icon.height()) // 2, self.icon)
+        QLCDNumber.paintEvent(self.input_lcd, e)
 
     def _add_btn_click(self):
         inputted_value = 100
@@ -573,7 +603,6 @@ class AddDialog(QDialog):
             time = inputted_value
         self.parent().time += time
         self.close()
-
 
 
 if __name__ == "__main__":
