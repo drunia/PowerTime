@@ -63,6 +63,17 @@ class PTBasePlugin(metaclass=ABCMeta):
         return False
 
     @abstractmethod
+    def deactivate(self):
+        """
+        Deactivating plugin
+
+        Method deactivate plugin
+
+        :return: Deactivation result (bool)
+        :raises Exception
+        """
+
+    @abstractmethod
     def build_settings(self, widget: QWidget):
         """Build plugin setting ui on plugin page
 

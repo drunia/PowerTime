@@ -28,7 +28,7 @@ def read_config(filename=MAIN_CONF_FILE):
 def write_config(c: configparser.ConfigParser, filename=MAIN_CONF_FILE):
     with open(filename, "w") as f:
         c.write(f)
-    print("Config writed")
+    print("Config writen")
 
 
 if __name__ == "__main__":

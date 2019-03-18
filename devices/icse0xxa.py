@@ -7,9 +7,6 @@ from serial import Serial, SerialException, SerialTimeoutException
 from serial.tools import list_ports
 from configparser import ConfigParser
 
-# Error log file, set for logging devices errors
-icse0xxa_err_file = None
-
 
 class ICSE0XXADevice:
     """Class for controlling ICSE0XXA device"""
@@ -39,7 +36,8 @@ class ICSE0XXADevice:
         self.__relays_register = 0
 
     def __del__(self):
-        if self.__connection != None: self.__connection.close()
+        if self.__connection is not None:
+            self.__connection.close()
 
     def relays_count(self):
         self.__chek_init()
@@ -105,7 +103,7 @@ class ICSE0XXADevice:
 
     def __chek_init(self):
         if not self.__id in ICSE0XXADevice.MODELS:
-            raise Exception("Unknow_device: {}".format(self.name()))
+            raise Exception("Unknown_device: {}".format(self.name()))
         if not self.__initialized:
             raise Exception("Device {} not initialized.".format(self.name()))
 
@@ -121,7 +119,8 @@ def load_devices_from_config(file="icse0xxa.conf"):
     c = ConfigParser()
     c.optionxform = str
     c.read(file)
-    if not ICSE0XXADevice.MAIN_CFG_SECTION in c.sections(): return dev_list
+    if ICSE0XXADevice.MAIN_CFG_SECTION not in c.sections():
+        return dev_list
     for k in c[ICSE0XXADevice.MAIN_CFG_SECTION]:
         dev_list.append(ICSE0XXADevice(k, int(c[ICSE0XXADevice.MAIN_CFG_SECTION][k], 16)))
     return dev_list
@@ -168,15 +167,9 @@ def find_devices():
 
 def icse0xxa_eprint(err, dev=""):
     print(err, file=sys.stderr)
-    if icse0xxa_err_file:
-        print("{} {} Error: {}".format(time.asctime(), dev, err), file=icse0xxa_err_file)
 
 
 def test():
-    # Set error file, for simply logging
-    global icse0xxa_err_file
-    icse0xxa_err_file = open(file="ICSE0XXA.errors", mode="a", encoding="utf8")
-
     dev_list = load_devices_from_config()
     if len(dev_list) == 0:
         print("No devices in config file, try autosearch device on serial ports")
@@ -193,7 +186,7 @@ def test():
     else:
         print("Loaded {} device(s)".format(len(dev_list)))
 
-    # Print loaded/finded divices
+    # Print loaded/finded devices
     for d in dev_list: print("Device: {}".format(d.name()))
 
     d = dev_list[0]

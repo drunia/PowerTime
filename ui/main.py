@@ -204,6 +204,7 @@ class PluginSettings(QDialog):
 
     def setup_ui(self):
         self.setWindowModality(Qt.WindowModal)
+        self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
         self.setWindowTitle(self.plugin.get_info()["plugin_name"])
         self.setMaximumSize(800, 600)
 
@@ -252,7 +253,10 @@ class PluginSettings(QDialog):
                 self.activate_btn.setText("Деактивировать")
                 print("Activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
             else:
-                print(self.plugin, "already activated")
+                if self.plugin.deactivate():
+                    self.activate_btn.setIcon(QIcon("./res/off.ico"))
+                    self.activate_btn.setText("Активировать")
+                    print(self.plugin, "deactivated")
         except Exception as e:
             QMessageBox.critical(self, "Ошибка активации", str(e), QMessageBox.Ok)
 

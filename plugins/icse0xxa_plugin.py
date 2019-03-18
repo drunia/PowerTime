@@ -67,7 +67,13 @@ class ICSE0XXA_Plugin(PTBasePlugin):
                 self.__channels[r + relay] = [d, r]
             relay += r + 1
 
-        self._activated = True
+        self._activated = self.__dev_list > 0
+        return self._activated
+
+    def deactivate(self):
+        self.__dev_list = []
+        self.__channels = {}
+        self._activated = False
         return self._activated
 
     def build_settings(self, widget: QWidget):

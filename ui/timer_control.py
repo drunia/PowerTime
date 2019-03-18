@@ -583,6 +583,7 @@ class AddDialog(QDialog):
         super().__init__(parent)
         self.icon = None
         self.inputted_value = 0
+        self.add_cash = 0
         self.edit_time_mode = EditTimeMode.HOURS
         if parent.mode == ControlMode.TIME:
             self.icon = QPixmap("./res/clock.png")
@@ -594,7 +595,7 @@ class AddDialog(QDialog):
 
     def _init_ui(self):
         self.setWindowTitle(self.parent().tittle_lb.text())
-        self.setFixedSize(380, 240)
+        self.setFixedSize(380, 220)
         self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
         self.setModal(True)
 
@@ -607,16 +608,16 @@ class AddDialog(QDialog):
         self.add_btn.setFixedSize(120, 30)
         self.add_btn.clicked.connect(self._add_btn_click)
         self.add_btn.setDefault(True)
-        vbox_lay.addWidget(self.add_btn, alignment=Qt.AlignRight | Qt.AlignBottom)
 
         self.input_lcd = QLCDNumber(self)
-        self.input_lcd.setStyleSheet("background: white;")
-        self.input_lcd.setFixedSize(self.width() - 20, (self.height() // 10) * 4)
+        self.input_lcd.setStyleSheet("background: silver;")
+        self.input_lcd.setFixedSize(self.width() - 20, (self.height() // 10) * 5)
         self.input_lcd.paintEvent = self._input_lcd_paint
         self.input_lcd.setDigitCount(9)
         self.input_lcd.setFocusPolicy(Qt.ClickFocus)
         self.input_lcd.setFocus()
-        self.input_lcd.focusInEvent = lambda x: print(x)
+        self.input_lcd.focusInEvent = lambda x: self.input_lcd.setStyleSheet("background: white;")
+        self.input_lcd.focusOutEvent = lambda x: self.input_lcd.setStyleSheet("background: silver;")
         self.input_lcd.keyPressEvent = self._input_key_press
 
         self.title_lb = QLabel()
@@ -625,13 +626,23 @@ class AddDialog(QDialog):
         self.title_lb.setFont(f)
         self.title_lb.setWordWrap(True)
 
+        self.res_lb = QLabel()
+        self.res_lb.setFont(f)
+
+        subh_lay = QHBoxLayout(self)
+        subh_lay.addWidget(self.res_lb, alignment=Qt.AlignLeft)
+        subh_lay.addWidget(self.add_btn, alignment=Qt.AlignRight)
+        vbox_lay.addLayout(subh_lay)
+
         vbox_lay.insertWidget(0, self.input_lcd, alignment=Qt.AlignBottom)
         vbox_lay.insertWidget(0, self.title_lb, alignment=Qt.AlignCenter)
 
         if self.parent().mode == ControlMode.TIME:
             self.title_lb.setText("Больше времени? та не вопрос!")
+            self.res_lb.setText("Введите время...")
         else:
             self.title_lb.setText("Кто платит - тот и заказывает музыку!")
+            self.res_lb.setText("Введите деньги...")
         self._display()
         self.show()
 
@@ -639,7 +650,13 @@ class AddDialog(QDialog):
         display_str = "Err"
         if self.parent().mode == ControlMode.TIME:
             display_str = "{:0>8}".format(str(datetime.timedelta(seconds=self.inputted_value)))
+            self.add_cash = str(round((self.inputted_value / 3600) * self.parent().price, 2))
+            self.res_lb.setText("Деньги: " + self.add_cash)
         elif self.parent().mode == ControlMode.CASH:
+            self.add_cash = self.inputted_value
+            self.res_lb.setText("Время: {:0>8}".format(
+                str(datetime.timedelta(seconds=round(float(self.inputted_value) / self.parent().price * 3600)))
+            ))
             display_str = self.inputted_value
         self.input_lcd.display(display_str)
 
@@ -652,6 +669,12 @@ class AddDialog(QDialog):
             self.add_btn.click()
         # Time
         if self.parent().mode == ControlMode.TIME:
+            # Delete
+            if evt.key() == Qt.Key_Delete:
+                if self.edit_time_mode == EditTimeMode.HOURS:
+                    self.inputted_value = self.inputted_value % 3600
+                if self.edit_time_mode == EditTimeMode.MINUTES:
+                    self.inputted_value = self.inputted_value - (self.inputted_value % 3600)
             # <- ->
             if evt.key() == Qt.Key_Left or evt.key() == Qt.Key_Right:
                 if self.edit_time_mode == EditTimeMode.HOURS:
@@ -734,7 +757,7 @@ class AddDialog(QDialog):
         pen.setCapStyle(Qt.RoundCap)
 
         if self.parent().mode == ControlMode.TIME:
-            h = (self.input_lcd.height() // 10) * 9
+            h = (self.input_lcd.height() // 10) * 8.5
             w = self.input_lcd.width() // self.input_lcd.digitCount()
             if self.edit_time_mode == EditTimeMode.HOURS:
                 offset_x, offset_y = w + 5, 8
@@ -749,15 +772,19 @@ class AddDialog(QDialog):
             self.time = round(float(self.inputted_value) / self.parent().price * 3600)
             if self.time < self.min_add_time:
                 QMessageBox.warning(self, "Добавить деньги",
-                    "Ошибка. Минимальная сумма для добавления: " + str(round(self.parent().price / 60 * 5, 2)))
+                    "Минимальная сумма для добавления: " + str(round(self.parent().price / 60 * 5, 2)))
                 return
         else:
             self.time = self.inputted_value
             if self.time < self.min_add_time:
                 QMessageBox.warning(self, "Добавить время",
-                    "Ошибка. Минимальная время для добавления: 5 минут")
+                    "Минимальное время для добавления: 5 минут")
                 return
-        self.parent().time += self.time
+        if QMessageBox.question(self, "Оплата",
+                                "Доплата в размере " + self.add_cash + " грн получена?",
+                                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+
+            self.parent().time += self.time
         self.close()
 
 
