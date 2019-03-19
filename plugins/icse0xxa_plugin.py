@@ -74,7 +74,6 @@ class ICSE0XXA_Plugin(PTBasePlugin):
         self.__dev_list = []
         self.__channels = {}
         self._activated = False
-        return self._activated
 
     def build_settings(self, widget: QWidget):
         Settings(self, widget)

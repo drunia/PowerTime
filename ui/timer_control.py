@@ -87,8 +87,6 @@ class TimerCashControl(QFrame):
         else:
             self.tariffs = {}
 
-        print(self.tariffs)
-
         # Timer
         self.timer = QTimer()
         self.timer.timerEvent = self._timer_event
@@ -128,6 +126,18 @@ class TimerCashControl(QFrame):
         f.setPointSize(20)
         self.tittle_lb.setFont(f)
         self.tittle_lb.setAlignment(Qt.AlignLeft)
+
+        # Tariffs combobox
+        self.tariff_cb = QComboBox()
+        f = self.tariff_cb.font()
+        f.setPointSize(12)
+        self.tariff_cb.setFont(f)
+        for o, v in self.tariffs.items():
+            try:
+                self.tariff_cb.addItem(o + " " + v + " грн", float(v))
+            except ValueError:
+                pass
+        self.tariff_cb.currentIndexChanged.connect(self.change_tariff_cb)
 
         # Time
         self.time_display = QLCDNumber()
@@ -181,14 +191,19 @@ class TimerCashControl(QFrame):
         self.start_btn.setMinimumSize(100, 20)
         self.start_btn.clicked.connect(self.start)
         self.start_btn.setAutoDefault(True)
+        self.start_btn.setFont(f)
 
         self.stop_btn = QPushButton("Стоп")
         self.stop_btn.setMinimumSize(100, 20)
         self.stop_btn.clicked.connect(self.stop)
+        self.stop_btn.setFont(f)
 
         # Root layout
         root_lay = QVBoxLayout(self)
-        root_lay.addWidget(self.tittle_lb, stretch=0)
+        head_hbox_lay = QHBoxLayout()
+        head_hbox_lay.addWidget(self.tittle_lb)
+        head_hbox_lay.addWidget(self.tariff_cb)
+        root_lay.addLayout(head_hbox_lay)
         root_lay.addWidget(self.time_display, stretch=1)
         root_lay.addWidget(self.cash_display, stretch=1)
 
@@ -199,6 +214,12 @@ class TimerCashControl(QFrame):
         controls_lay.setContentsMargins(0, 10, 0, 5)
 
         root_lay.addLayout(controls_lay)
+
+    # Set price by tariff
+    def change_tariff_cb(self, index):
+        self.tariff_cb.setCurrentIndex(index)
+        print("Channel:", self.channel, "tariff changed to:", self.tariff_cb.currentText())
+        self.price = self.tariff_cb.currentData()
 
     # Timer
     def _timer_event(self, evt):
@@ -291,8 +312,8 @@ class TimerCashControl(QFrame):
             return
         if (self.cash or self.time) and \
                 QMessageBox.No == QMessageBox.question(
-                self.parent(), self.tittle_lb.text(), "Завершить текущий сеанс?",
-                QMessageBox.Yes | QMessageBox.No):
+            self.parent(), self.tittle_lb.text(), "Завершить текущий сеанс?",
+            QMessageBox.Yes | QMessageBox.No):
             return
 
         self.time_display.setFocusPolicy(Qt.ClickFocus)
@@ -421,6 +442,7 @@ class TimerCashControl(QFrame):
         # In edit mode , we work ONLY with str type self.cash
         if evt.key() in (Qt.Key_Enter, Qt.Key_Return, Qt.Key_Escape):
             self.cash_display.clearFocus()
+            return
         if (Qt.Key_0 <= evt.key() <= Qt.Key_9) or \
                 (evt.key() == Qt.Key_Period or evt.key() == Qt.Key_Backspace):
             cash = str(self.cash)
@@ -442,7 +464,8 @@ class TimerCashControl(QFrame):
             else:
                 cash += evt.text()
             self.cash = cash if len(cash) > 0 else "0"
-        if evt.key() == Qt.Key_Delete: self.cash = "0"
+        if evt.key() == Qt.Key_Delete:
+            self.cash = "0"
         self.cash_display.display(self.cash)
 
     # Cash display mouse move
@@ -519,7 +542,7 @@ class TimerCashControl(QFrame):
             # Str to time, after edit
             self.time = (int(self.tmp_edit_time["h_peace"]) * 3600) + \
                         (int(self.tmp_edit_time["m_peace"]) * 60) + \
-                         int(self.tmp_edit_time["time_str"][6:8])
+                        int(self.tmp_edit_time["time_str"][6:8])
             self.display()
         if evt.key() == Qt.Key_Left or evt.key() == Qt.Key_Right:
             if self.edit_time_mode == EditTimeMode.HOURS:
@@ -772,18 +795,17 @@ class AddDialog(QDialog):
             self.time = round(float(self.inputted_value) / self.parent().price * 3600)
             if self.time < self.min_add_time:
                 QMessageBox.warning(self, "Добавить деньги",
-                    "Минимальная сумма для добавления: " + str(round(self.parent().price / 60 * 5, 2)))
+                                    "Минимальная сумма для добавления: " + str(round(self.parent().price / 60 * 5, 2)))
                 return
         else:
             self.time = self.inputted_value
             if self.time < self.min_add_time:
                 QMessageBox.warning(self, "Добавить время",
-                    "Минимальное время для добавления: 5 минут")
+                                    "Минимальное время для добавления: 5 минут")
                 return
         if QMessageBox.question(self, "Оплата",
                                 "Доплата в размере " + self.add_cash + " грн получена?",
                                 QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
-
             self.parent().time += self.time
         self.close()
 

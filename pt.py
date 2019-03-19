@@ -21,12 +21,12 @@ TARIFFS_CONF_SECTION = "Tariffs"
 def read_config(filename=MAIN_CONF_FILE):
     cp = configparser.ConfigParser()
     cp.optionxform = str
-    cp.read(filename)
+    cp.read(filename, "utf-8")
     return cp
 
 
 def write_config(c: configparser.ConfigParser, filename=MAIN_CONF_FILE):
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         c.write(f)
     print("Config writen")
 

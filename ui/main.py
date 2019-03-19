@@ -48,9 +48,7 @@ class MainWindow(QMainWindow):
         menubar.addMenu(self.menu_devices)
 
         # Central widget
-        grid_lay = QGridLayout()
         self.control_frame = QFrame()
-        self.control_frame.setLayout(grid_lay)
 
         self.scroll_area = QScrollArea(self.centralWidget())
         self.scroll_area.setWidgetResizable(True)
@@ -69,14 +67,19 @@ class MainWindow(QMainWindow):
     def add_plugin_controls(self):
         """Add switchable controls for controlling active plugin"""
         channels = 0
-        for plugin in self.loaded_plugins:
-            if plugin.get_info()["activated"]:
-                channels += plugin.get_channels_count()
+        for plugin in self._get_activated_plugins():
+            channels += plugin.get_channels_count()
 
         channels = 4
 
         cols = 4 if (channels // 5) > 0 else 2
         print("total channels:", channels)
+
+        # Delete old controls
+        for pc in self.plugin_controls:
+            del pc
+        self.control_frame.setLayout(QGridLayout())
+
         for channel in range(channels):
             control = TimerCashControl(self, channel)
             self.control_frame.layout().addWidget(control, (channel // cols), channel % cols)
@@ -91,23 +94,22 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(e)
 
-    def _get_activated_plugin(self):
+    def _get_activated_plugins(self):
+        """Returned activated plugins list"""
+        l = []
         for p in self.loaded_plugins:
             if p.get_info()["activated"]:
-                return p
-        return None
+                l.append(p)
+        return l
 
     def save_config(self):
         import pt
         # Plugins
         for plugin in self.loaded_plugins:
-            try:
-                if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
-                    self.config.add_section(pt.PLUGINS_CONF_SECTION)
-                self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info()["plugin_name"]] = \
-                    str(plugin.get_info()["activated"])
-            except Exception as e:
-                print(e)
+            if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
+                self.config.add_section(pt.PLUGINS_CONF_SECTION)
+            self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info()["plugin_name"]] = \
+                str(int(plugin.get_info()["activated"]))
         try:
             pt.write_config(self.config)
         except Exception as e:
@@ -126,7 +128,7 @@ class MainWindow(QMainWindow):
                 action.setIcon(QIcon("./res/off.ico"))
 
     def find_plugins(self, plugins_dir="./plugins"):
-        """search device-plugins in modules dir
+        """Search device-plugins in modules dir
         :return list[Plugin_Class...,]"""
         import pkgutil, inspect
         plugins = []
@@ -156,16 +158,16 @@ class MainWindow(QMainWindow):
         import pt
         if self.config.has_section(pt.PLUGINS_CONF_SECTION):
             for plugin, active_state in self.config[pt.PLUGINS_CONF_SECTION].items():
-                if active_state:
+                if int(active_state):
                     for p in self.loaded_plugins:
                         if p.get_info()["plugin_name"] == plugin:
                             try:
                                 print("_activate_plugins_on_start():", plugin)
-                                p.activate()
+                                #p.activate()
+                                p._activated = True
                             except Exception as e:
                                 print(e)
         del pt
-
 
     def _build_devices_actions(self):
         """Build actions for devices menu
@@ -184,6 +186,7 @@ class MainWindow(QMainWindow):
         return actions
 
     def mclick(self):
+        """ Mouse click from devices menu """
         plugin = qApp.sender().data()
         try:
             psettings = PluginSettings(self, plugin)
@@ -248,17 +251,24 @@ class PluginSettings(QDialog):
         try:
             self.plugin: PTBasePlugin
             if not self.plugin.get_info()["activated"]:
-                self.plugin.activate()
+                # self.plugin.activate()
+                self.plugin._activated = True
                 self.activate_btn.setIcon(QIcon("./res/on.ico"))
                 self.activate_btn.setText("Деактивировать")
                 print("Activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
             else:
-                if self.plugin.deactivate():
-                    self.activate_btn.setIcon(QIcon("./res/off.ico"))
-                    self.activate_btn.setText("Активировать")
-                    print(self.plugin, "deactivated")
+                self.plugin.deactivate()
+                self.activate_btn.setIcon(QIcon("./res/off.ico"))
+                self.activate_btn.setText("Активировать")
+                print(self.plugin, "deactivated")
         except Exception as e:
             QMessageBox.critical(self, "Ошибка активации", str(e), QMessageBox.Ok)
+
+    def closeEvent(self, e):
+        """On plugin settings close"""
+        # Rebuild timer controls
+        print("Rebuild timer controls")
+        self.parent().add_plugin_controls()
 
 
 if __name__ == "__main__":
