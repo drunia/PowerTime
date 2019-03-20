@@ -16,6 +16,7 @@ VERSION = "1.0.0"
 APP_MAIN_SECTION = "Main"
 PLUGINS_CONF_SECTION = "Plugins"
 TARIFFS_CONF_SECTION = "Tariffs"
+TIMER_CONTROLS_SECTION = "TimerControls"
 
 
 def read_config(filename=MAIN_CONF_FILE):

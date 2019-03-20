@@ -1,12 +1,14 @@
 #!/usb/bin/env python3
 #-*- coding: utf-8 -*-
-
+import struct
 import win32api, win32con, win32gui
 from ctypes import *
 
 #
 # Device change events (WM_DEVICECHANGE wParam)
 #
+import pywintypes
+
 DBT_DEVICEARRIVAL = 0x8000
 DBT_DEVICEQUERYREMOVE = 0x8001
 DBT_DEVICEQUERYREMOVEFAILED = 0x8002
@@ -32,6 +34,7 @@ DBTF_NET = 0x0002
 
 WORD = c_ushort
 DWORD = c_ulong
+CHAR = c_char
 
 
 class DEV_BROADCAST_HDR(Structure):
@@ -41,24 +44,13 @@ class DEV_BROADCAST_HDR(Structure):
         ("dbch_reserved", DWORD)
     ]
 
-
-class DEV_BROADCAST_VOLUME(Structure):
+class DEV_BROADCAST_PORT(Structure):
     _fields_ = [
-        ("dbcv_size", DWORD),
-        ("dbcv_devicetype", DWORD),
-        ("dbcv_reserved", DWORD),
-        ("dbcv_unitmask", DWORD),
-        ("dbcv_flags", WORD)
+        ("dbcp_size", DWORD),
+        ("dbcp_devicetype", DWORD),
+        ("dbcp_reserved", DWORD),
+        ("dbcp_name", CHAR)
     ]
-
-
-def drive_from_mask(mask):
-    n_drive = 0
-    while 1:
-        if (mask & (2 ** n_drive)):
-            return n_drive
-        else:
-            n_drive += 1
 
 
 class Notification:
@@ -98,11 +90,15 @@ class Notification:
         #print("hwnd = {}, msg = {}, wparam = {}, lparam = {}".format(hwnd, msg, wparam, lparam))
 
         if wparam == DBT_DEVICEARRIVAL and dev_broadcast_hdr.dbch_devicetype == DBT_DEVTYPE_PORT:
-                print("PORT CONNECT ")
+            print("USB-PORT CONNECT ")
+            dev_broadcast_port = DEV_BROADCAST_PORT.from_address(lparam)
+            print(dev_broadcast_port.dbcp_name)
+            print(dev_broadcast_port.dbcp_devicetype)
         if wparam == DBT_DEVICEREMOVECOMPLETE and dev_broadcast_hdr.dbch_devicetype == DBT_DEVTYPE_PORT:
-                print("PORT DISCONNECT ")
-
+            print("USB-PORT DISCONNECT ")
         return 1
+
+
 
 
 if __name__ == '__main__':

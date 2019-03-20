@@ -99,7 +99,6 @@ class TimerCashControl(QFrame):
         # UI
         self._init_ui()
         self.set_control_tittle()
-
         self.display()
 
         # Test timeout signal
@@ -117,8 +116,8 @@ class TimerCashControl(QFrame):
     def _init_ui(self):
         # Set minimum size
         self.setMinimumSize(310, 260)
-        self.setMaximumSize(380, 340)
-        self.setFrameStyle(QFrame.Box)
+        self.setMaximumSize(480, 400)
+        self.setFrameStyle(QFrame.Panel)
 
         # Title (Number of channel)
         self.tittle_lb = QLabel()
@@ -126,18 +125,6 @@ class TimerCashControl(QFrame):
         f.setPointSize(20)
         self.tittle_lb.setFont(f)
         self.tittle_lb.setAlignment(Qt.AlignLeft)
-
-        # Tariffs combobox
-        self.tariff_cb = QComboBox()
-        f = self.tariff_cb.font()
-        f.setPointSize(12)
-        self.tariff_cb.setFont(f)
-        for o, v in self.tariffs.items():
-            try:
-                self.tariff_cb.addItem(o + " " + v + " грн", float(v))
-            except ValueError:
-                pass
-        self.tariff_cb.currentIndexChanged.connect(self.change_tariff_cb)
 
         # Time
         self.time_display = QLCDNumber()
@@ -186,6 +173,30 @@ class TimerCashControl(QFrame):
         p: QPalette = self.cash_display.palette()
         self.default_background_display_color = p.color(QPalette.Background)
 
+        # Tariffs combobox
+        self.tariff_cb = QComboBox()
+        f = self.tariff_cb.font()
+        f.setPointSize(12)
+        self.tariff_cb.setFont(f)
+        for o, v in self.tariffs.items():
+            try:
+                self.tariff_cb.addItem(o, float(v))
+                self.tariff_cb.setItemData(self.tariff_cb.count() - 1,
+                                           " Стоимость за час: " + v + " грн.", Qt.ToolTipRole)
+            except ValueError:
+                pass
+        # Select last select tariff
+        if self.tariff_cb.count() > 0:
+            index = 0
+            if self.config.has_option(pt.TIMER_CONTROLS_SECTION, "tariff-channel-" + str(self.channel)):
+                tariff = self.config[pt.TIMER_CONTROLS_SECTION]["tariff-channel-" + str(self.channel)]
+                if self.tariff_cb.findText(tariff) >= 0:
+                    index = self.tariff_cb.findText(tariff)
+            self.tariff_cb.setCurrentIndex(index)
+            self.change_tariff_cb(index)
+        # Set slot for change events
+        self.tariff_cb.currentIndexChanged.connect(self.change_tariff_cb)
+
         # Controls
         self.start_btn = QPushButton("Старт")
         self.start_btn.setMinimumSize(100, 20)
@@ -217,9 +228,24 @@ class TimerCashControl(QFrame):
 
     # Set price by tariff
     def change_tariff_cb(self, index):
-        self.tariff_cb.setCurrentIndex(index)
         print("Channel:", self.channel, "tariff changed to:", self.tariff_cb.currentText())
         self.price = self.tariff_cb.currentData()
+        # Check admin tariff
+        if self.price == 0:
+            self.time_display.setFocusPolicy(Qt.NoFocus)
+            self.cash_display.setFocusPolicy(Qt.NoFocus)
+            self.cash = 0
+            self.time = 0
+        else:
+            self.time_display.setFocusPolicy(Qt.ClickFocus)
+            self.cash_display.setFocusPolicy(Qt.ClickFocus)
+        # Save tariff to config
+        if not self.config.has_section(pt.TIMER_CONTROLS_SECTION):
+            self.config.add_section(pt.TIMER_CONTROLS_SECTION)
+        self.config[pt.TIMER_CONTROLS_SECTION]["tariff-channel-" + str(self.channel)] = \
+            self.tariff_cb.currentText()
+
+        self.display()
 
     # Timer
     def _timer_event(self, evt):
@@ -293,6 +319,7 @@ class TimerCashControl(QFrame):
             self.session_time = 0
             if self.cash == 0 and self.time == 0:
                 self.mode = ControlMode.FREE
+            self.tariff_cb.setDisabled(True)
             return
 
         if self.paused:
@@ -316,8 +343,10 @@ class TimerCashControl(QFrame):
             QMessageBox.Yes | QMessageBox.No):
             return
 
-        self.time_display.setFocusPolicy(Qt.ClickFocus)
-        self.cash_display.setFocusPolicy(Qt.ClickFocus)
+        # Check admin tariff
+        if self.price > 0:
+            self.time_display.setFocusPolicy(Qt.ClickFocus)
+            self.cash_display.setFocusPolicy(Qt.ClickFocus)
 
         self.start_btn.setText("Старт")
 
@@ -327,6 +356,7 @@ class TimerCashControl(QFrame):
         self.displayed = True
         self.paused = False
         self.stopped = True
+        self.tariff_cb.setDisabled(False)
 
         # Before clear self.cash & self.time we send signal
         # for calculating difference for cash back in main app
@@ -403,8 +433,6 @@ class TimerCashControl(QFrame):
         palette: QPalette = self.cash_display.palette()
         palette.setColor(QPalette.Background, QColor(255, 255, 255))
         self.cash_display.setPalette(palette)
-
-        print(self.cash)
         try:
             if float(self.cash).is_integer():
                 self.cash = str(int(float(self.cash)))
@@ -500,10 +528,8 @@ class TimerCashControl(QFrame):
         palette.setColor(QPalette.Background, self.default_background_display_color)
         self.time_display.setPalette(palette)
         self.edit_time_mode = EditTimeMode.NO_EDIT
-
         if self.time == 0:
             self.mode = ControlMode.FREE
-
         self.display()
         self.start_btn.setFocus()
 

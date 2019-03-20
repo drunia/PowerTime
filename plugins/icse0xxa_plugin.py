@@ -38,10 +38,10 @@ class ICSE0XXA_Plugin(PTBasePlugin):
 
     def switch(self, channel, state):
         self.__check_activated()
-        if channel > len(self.__channels):
+        if channel+1 > len(self.__channels):
             raise SwitchException(
-                "Num {} channel biggest of channels {} "
-                "on connected devices.".format(channel, len(self.__channels))
+                "Channel {}  biggest of total channels {} "
+                "on connected devices.".format(channel+1, len(self.__channels))
             )
         dev, ch = self.__channels[channel]
         dev.switch_relay(ch, state)

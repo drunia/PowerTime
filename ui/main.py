@@ -62,7 +62,9 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Вeрсия: " + qApp.applicationVersion())
         self.statusBar()
 
+        # Add timer-controls
         self.add_plugin_controls()
+
 
     def add_plugin_controls(self):
         """Add switchable controls for controlling active plugin"""
@@ -104,6 +106,12 @@ class MainWindow(QMainWindow):
 
     def save_config(self):
         import pt
+        # Main
+        if not self.config.has_section(pt.APP_MAIN_SECTION):
+            self.config.add_section(pt.APP_MAIN_SECTION)
+        self.config[pt.APP_MAIN_SECTION]["maximaized"] = str(int(self.isMaximized()))
+        self.config[pt.APP_MAIN_SECTION]["height"] = str(self.height())
+        self.config[pt.APP_MAIN_SECTION]["width"] = str(self.width())
         # Plugins
         for plugin in self.loaded_plugins:
             if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
@@ -158,7 +166,7 @@ class MainWindow(QMainWindow):
         import pt
         if self.config.has_section(pt.PLUGINS_CONF_SECTION):
             for plugin, active_state in self.config[pt.PLUGINS_CONF_SECTION].items():
-                if int(active_state):
+                if int(bool(active_state)):
                     for p in self.loaded_plugins:
                         if p.get_info()["plugin_name"] == plugin:
                             try:
