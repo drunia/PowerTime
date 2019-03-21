@@ -107,7 +107,7 @@ class Settings(QFrame):
 
         # QListView to view connected/saved devices
         self.qlist.setModel(self.qlist_model)
-        f = self.qlist.font();
+        f = self.qlist.font()
         f.setPointSize(12)
         self.qlist.setFont(f)
         self.qlist.clicked.connect(self.qlist_item_clicked)
@@ -167,16 +167,13 @@ class Settings(QFrame):
         devs = find_devices()
         if len(devs) == 0:
             self.st_lb.setText("")
-            r = QMessageBox.warning(
+            QMessageBox.warning(
                 self, "Поиск устройств",
                 (
                     "Устройства не найдены!\n\n"
                     "Попробуйте выключить/включить устройство(ва) и выполнить поиск снова.\n"
-                    "Удалить сохраненные устройства?"
-                ), QMessageBox.Yes | QMessageBox.No)
-            if r == QMessageBox.Yes:
-                self.qlist_model.clear()
-            return
+                ), QMessageBox.Ok)
+            self.qlist_model.clear()
         # Add from find_devices()
         self.qlist_model.clear()
         for d in devs:
@@ -186,6 +183,7 @@ class Settings(QFrame):
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
         self.st_lb.setText("Найдено утсройств: {} ".format(len(devs)))
+        save_devices_to_config(devs)
 
     def save_settings(self):
         devs = []

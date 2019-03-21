@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
         # Main
         if not self.config.has_section(pt.APP_MAIN_SECTION):
             self.config.add_section(pt.APP_MAIN_SECTION)
-        self.config[pt.APP_MAIN_SECTION]["maximaized"] = str(int(self.isMaximized()))
+        self.config[pt.APP_MAIN_SECTION]["maximized"] = str(int(self.isMaximized()))
         self.config[pt.APP_MAIN_SECTION]["height"] = str(self.height())
         self.config[pt.APP_MAIN_SECTION]["width"] = str(self.width())
         # Plugins

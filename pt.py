@@ -37,17 +37,6 @@ if __name__ == "__main__":
 
     config = read_config(MAIN_CONF_FILE)
 
-    # Usb device plug-in/plug-out notify
-    usb_notification = None
-    if os.name == "nt":
-        import devices.usb_device_event_win
-        usb_notification = devices.usb_device_event_win.Notification()
-    elif os.name == "linux":
-        import devices.usb_device_event_linux
-
-    if usb_notification:
-        pass
-
     app = QApplication(sys.argv)
     app.setStyle("fusion")
     app.setApplicationDisplayName("PowerTime")
@@ -57,5 +46,22 @@ if __name__ == "__main__":
 
     mw = MainWindow(config)
     mw.show()
+
+    # Usb device plug-in/plug-out notify
+    port_notification = None
+    if os.name == "nt":
+        import devices.icsex00a_port_state_notificator_win
+
+        port_notification = devices.icsex00a_port_state_notificator_win.PortStateNotificator()
+    elif os.name == "linux":
+        import devices.icsex00a_port_state_notificator_linux
+
+    # Called when ports (Serial/Parallel/etc...) connected or disconnected
+    def port_state_changed(port, state):
+        print("Port [{}] connected state changed to: {}".format(port, state))
+
+    if port_notification:
+        print("port_notification created")
+        port_notification.state_changed.connect(port_state_changed)
 
     sys.exit(app.exec())
