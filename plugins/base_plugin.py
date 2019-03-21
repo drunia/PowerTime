@@ -42,9 +42,22 @@ class PTBasePlugin(metaclass=ABCMeta):
         return 0
 
     @abstractmethod
+    def get_channels_info(self):
+        """
+        Returned dict {global_channel_num: [dev, local_channel_num], ...}
+        Like:
+        {
+            0: [dev1, 0],
+            1: [dev1: 1],
+            2: [dev2: 0],
+            3: [dev2: 1]
+        }
+        """
+        return {}
+
+    @abstractmethod
     def switch(self, channel, state):
         """Switch channel on/off
-
         :param: channel Channel to switch int
         :param: state State of chanel bool
         :raises SwitchException, Exception"""
@@ -54,9 +67,7 @@ class PTBasePlugin(metaclass=ABCMeta):
     def activate(self):
         """
         Activating plugin
-
         This method activate / initialize plugin
-
         :return: Activation result (bool)
         :raises Exception
         """
@@ -66,10 +77,7 @@ class PTBasePlugin(metaclass=ABCMeta):
     def deactivate(self):
         """
         Deactivating plugin
-
         Method deactivate plugin
-
-        :return: Deactivation result (bool)
         :raises Exception
         """
 

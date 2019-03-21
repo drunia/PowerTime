@@ -77,6 +77,9 @@ class TimerCashControl(QFrame):
         # Add cash/time dialog object
         self.add_dialog = None
 
+        # Current plugin
+        self.plugin = None
+
         # last second for indicating (blinking) control mode
         self.time_repaint_mode = datetime.datetime.now().second
 

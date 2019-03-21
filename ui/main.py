@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
 
         self._setup_ui()
         self._activate_plugins_on_start()
+        self.add_plugin_controls()
 
     def _setup_ui(self):
         self.setWindowTitle("PowerTime")
@@ -65,14 +66,15 @@ class MainWindow(QMainWindow):
         # Add timer-controls
         self.add_plugin_controls()
 
-
     def add_plugin_controls(self):
         """Add switchable controls for controlling active plugin"""
-        channels = 0
+        all_channels_info = {}
         for plugin in self._get_activated_plugins():
-            channels += plugin.get_channels_count()
+            all_channels_info.update(plugin.get_channels_info())
+        channels = len(all_channels_info)
 
-        channels = 4
+        # delete this
+        #channels = 4
 
         cols = 4 if (channels // 5) > 0 else 2
         print("total channels:", channels)
@@ -87,6 +89,8 @@ class MainWindow(QMainWindow):
             self.control_frame.layout().addWidget(control, (channel // cols), channel % cols)
             self.plugin_controls.append(control)
             control.switched.connect(self.switch_event)
+            # Set the
+            control.plugin = all_channels_info[channel][0]
         self.scroll_area.setWidget(self.control_frame)
 
     def switch_event(self, control, state: bool):
@@ -169,12 +173,12 @@ class MainWindow(QMainWindow):
                 if int(bool(active_state)):
                     for p in self.loaded_plugins:
                         if p.get_info()["plugin_name"] == plugin:
-                            try:
-                                print("_activate_plugins_on_start():", plugin)
-                                #p.activate()
-                                p._activated = True
-                            except Exception as e:
-                                print(e)
+                            #try:
+                            print("_activate_plugins_on_start():", plugin)
+                            p.activate()
+                                #p._activated = True
+                            #except Exception as e:
+                            #    print(e)
         del pt
 
     def _build_devices_actions(self):

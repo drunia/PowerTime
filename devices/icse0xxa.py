@@ -165,7 +165,7 @@ def find_devices():
     return dev_list
 
 
-def icse0xxa_eprint(err, dev=""):
+def icse0xxa_eprint(err):
     print(err, file=sys.stderr)
 
 

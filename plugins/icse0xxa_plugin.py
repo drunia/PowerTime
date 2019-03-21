@@ -36,6 +36,10 @@ class ICSE0XXA_Plugin(PTBasePlugin):
             count += d.relays_count()
         return count
 
+    def get_channels_info(self):
+        print("get_channels_info:", len(self.__channels))
+        return self.__channels
+
     def switch(self, channel, state):
         self.__check_activated()
         if channel+1 > len(self.__channels):
@@ -63,11 +67,11 @@ class ICSE0XXA_Plugin(PTBasePlugin):
 
         relay = 0
         for d in self.__dev_list:
-            for r in range(0, 8):
+            for r in range(0, d.relays_count()):
                 self.__channels[r + relay] = [d, r]
             relay += r + 1
 
-        self._activated = self.__dev_list > 0
+        self._activated = len(self.__dev_list) > 0
         return self._activated
 
     def deactivate(self):
