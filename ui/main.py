@@ -63,14 +63,15 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Вeрсия: " + qApp.applicationVersion())
         self.statusBar()
 
-        # Add timer-controls
-        self.add_plugin_controls()
+        self.show()
 
     def add_plugin_controls(self):
         """Add switchable controls for controlling active plugin"""
         all_channels_info = {}
         for plugin in self._get_activated_plugins():
-            all_channels_info.update(plugin.get_channels_info())
+            for k, v in plugin.get_channels_info().items():
+                v.append(plugin)
+                all_channels_info[k] = v
         channels = len(all_channels_info)
 
         # delete this
@@ -89,8 +90,12 @@ class MainWindow(QMainWindow):
             self.control_frame.layout().addWidget(control, (channel // cols), channel % cols)
             self.plugin_controls.append(control)
             control.switched.connect(self.switch_event)
-            # Set the
-            control.plugin = all_channels_info[channel][0]
+            if all_channels_info:
+                # Set the plugin info on tittle
+                ch_info = all_channels_info[channel]
+                plugin_info = ch_info[2].get_info()["plugin_name"] + \
+                              " - " + str(ch_info[0]) + " - channel: " + str(ch_info[1])
+                control.tittle_lb.setToolTip(plugin_info)
         self.scroll_area.setWidget(self.control_frame)
 
     def switch_event(self, control, state: bool):
@@ -172,13 +177,22 @@ class MainWindow(QMainWindow):
             for plugin, active_state in self.config[pt.PLUGINS_CONF_SECTION].items():
                 if int(bool(active_state)):
                     for p in self.loaded_plugins:
+                        errors = []
                         if p.get_info()["plugin_name"] == plugin:
-                            #try:
-                            print("_activate_plugins_on_start():", plugin)
-                            p.activate()
-                                #p._activated = True
-                            #except Exception as e:
-                            #    print(e)
+                            try:
+                                print("_activate_plugins_on_start():", plugin)
+                                p.activate()
+                                p._ICSE0XXAPlugin__activated = True
+                            except Exception as e:
+                                errors.append(e)
+                        # Show errors
+                        if errors:
+                            err_str = ""
+                            for e in errors:
+                                err_str += str(e) + "\n"
+                            err_str = err_str[:-1]
+                            #QMessageBox.critical(self, "Активация " + plugin, err_str, QMessageBox.Ok)
+                            print(err_str)
         del pt
 
     def _build_devices_actions(self):
@@ -264,7 +278,7 @@ class PluginSettings(QDialog):
             self.plugin: PTBasePlugin
             if not self.plugin.get_info()["activated"]:
                 # self.plugin.activate()
-                self.plugin._activated = True
+                self.plugin.__activated = True
                 self.activate_btn.setIcon(QIcon("./res/on.ico"))
                 self.activate_btn.setText("Деактивировать")
                 print("Activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")

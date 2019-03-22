@@ -18,7 +18,7 @@ class PTBasePlugin(metaclass=ABCMeta):
     """Base Power Time plugin"""
     def __init__(self):
         super().__init__()
-        self._activated = False
+        self.__activated = False
 
     @abstractmethod
     def get_info(self):
@@ -48,9 +48,9 @@ class PTBasePlugin(metaclass=ABCMeta):
         Like:
         {
             0: [dev1, 0],
-            1: [dev1: 1],
-            2: [dev2: 0],
-            3: [dev2: 1]
+            1: [dev1, 1],
+            2: [dev2, 0],
+            3: [dev2, 1]
         }
         """
         return {}
@@ -69,7 +69,7 @@ class PTBasePlugin(metaclass=ABCMeta):
         Activating plugin
         This method activate / initialize plugin
         :return: Activation result (bool)
-        :raises Exception
+        :raise Exception
         """
         return False
 

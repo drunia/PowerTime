@@ -45,7 +45,6 @@ if __name__ == "__main__":
     desktop: QDesktopWidget = app.desktop()
 
     mw = MainWindow(config)
-    mw.show()
 
     # Usb device plug-in/plug-out notify
     port_notification = None

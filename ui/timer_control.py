@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import *
 from configparser import ConfigParser
 import datetime, enum, pt
 
+from PyQt5.QtWidgets import QVBoxLayout
+
 
 class ControlMode(enum.Enum):
     """Enumeration for control modes"""
@@ -77,9 +79,6 @@ class TimerCashControl(QFrame):
         # Add cash/time dialog object
         self.add_dialog = None
 
-        # Current plugin
-        self.plugin = None
-
         # last second for indicating (blinking) control mode
         self.time_repaint_mode = datetime.datetime.now().second
 
@@ -118,7 +117,7 @@ class TimerCashControl(QFrame):
 
     def _init_ui(self):
         # Set minimum size
-        self.setMinimumSize(310, 260)
+        self.setMinimumSize(320, 300)
         self.setMaximumSize(480, 400)
         self.setFrameStyle(QFrame.Panel)
 
@@ -214,6 +213,7 @@ class TimerCashControl(QFrame):
 
         # Root layout
         root_lay = QVBoxLayout(self)
+        # Head
         head_hbox_lay = QHBoxLayout()
         head_hbox_lay.addWidget(self.tittle_lb)
         head_hbox_lay.addWidget(self.tariff_cb)

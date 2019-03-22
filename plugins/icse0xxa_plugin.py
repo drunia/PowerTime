@@ -8,18 +8,18 @@ from PyQt5.Qt import (QFrame, QWidget, QHBoxLayout, QVBoxLayout, QListView, QSta
 from PyQt5.QtCore import QSize, QModelIndex, Qt
 
 
-class ICSE0XXA_Plugin(PTBasePlugin):
+class ICSE0XXAPlugin(PTBasePlugin):
     """Plugin for control ICSE0XXA devices"""
 
     def __init__(self):
         super().__init__()
         # Structure of __channels : {global number of channel: [device, local number of channel], ...}
         self.__channels = {}
-        self._activated = False
+        self.__activated = False
         self.__dev_list = []
 
     def __check_activated(self):
-        if not self._activated:
+        if not self.__activated:
             raise ActivateException("Need activate first!")
 
     def get_info(self):
@@ -27,7 +27,7 @@ class ICSE0XXA_Plugin(PTBasePlugin):
                 "plugin_name": "ICSE0XXA control",
                 "version": 1.0,
                 "description": "Плагин для управления релейными модулями типа ICSE0XXA",
-                "activated": self._activated}
+                "activated": self.__activated}
 
     def get_channels_count(self):
         self.__check_activated()
@@ -37,7 +37,6 @@ class ICSE0XXA_Plugin(PTBasePlugin):
         return count
 
     def get_channels_info(self):
-        print("get_channels_info:", len(self.__channels))
         return self.__channels
 
     def switch(self, channel, state):
@@ -62,29 +61,33 @@ class ICSE0XXA_Plugin(PTBasePlugin):
                 print("No devices!")
 
         for d in self.__dev_list:
-            d.init_device(not self._activated)
-            print(d, "initialized")
+            #d.init_device(not self.__activated)
+            # Delete this below and uncomment above
+            d._ICSE0XXADevice__initialized = True
+            print("ICSE0XXAPlugin.activate():", d, "initialized")
 
         relay = 0
         for d in self.__dev_list:
             for r in range(0, d.relays_count()):
                 self.__channels[r + relay] = [d, r]
             relay += r + 1
-
-        self._activated = len(self.__dev_list) > 0
-        return self._activated
+        self.__activated = len(self.__dev_list) > 0
+        return self.__activated
 
     def deactivate(self):
+        # del devices & close ports
+        for dev in self.__dev_list:
+            del dev
         self.__dev_list = []
         self.__channels = {}
-        self._activated = False
+        self.__activated = False
 
     def build_settings(self, widget: QWidget):
         Settings(self, widget)
 
 
 class Settings(QFrame):
-    def __init__(self, plugin: ICSE0XXA_Plugin, parent=None):
+    def __init__(self, plugin: ICSE0XXAPlugin, parent=None):
         super().__init__(parent)
         self.st_lb = QLabel()
         self.img_lb = QLabel()

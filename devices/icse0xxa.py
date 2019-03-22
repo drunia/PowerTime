@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import time, sys
 
@@ -36,6 +36,7 @@ class ICSE0XXADevice:
         self.__relays_register = 0
 
     def __del__(self):
+        print("delete device")
         if self.__connection is not None:
             self.__connection.close()
 
@@ -90,19 +91,25 @@ class ICSE0XXADevice:
                 self.__connection.open()
                 self.__connection.write(ICSE0XXADevice.ID_COMMAND)
                 time.sleep(0.5)
+                answer = self.__connection.read(1)
+                if len(answer) == 0:
+                    raise Exception("Device not responding. Port: " + self.__port)
+                if len(answer) > 0 and answer[0] not in ICSE0XXADevice.MODELS:
+                    raise Exception("Unknown device '" + hex(answer[0]) + "'")
                 self.__connection.write(ICSE0XXADevice.READY_COMMAND)
                 self.__connection.close()
                 time.sleep(0.5)
-            self.__connection.open()
-            time.sleep(0.5)
+            else:
+                self.__connection.open()
+                time.sleep(0.5)
         except Exception as e:
-            icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e), self)
+            icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e))
             raise e
         # no errors - good
         self.__initialized = True
 
     def __chek_init(self):
-        if not self.__id in ICSE0XXADevice.MODELS:
+        if self.__id not in ICSE0XXADevice.MODELS:
             raise Exception("Unknown_device: {}".format(self.name()))
         if not self.__initialized:
             raise Exception("Device {} not initialized.".format(self.name()))
@@ -176,7 +183,7 @@ def test():
         dev_list = find_devices()
 
         if len(dev_list) == 0:
-            print("No device(s) finded on serial ports. " \
+            print("No device(s) finded on serial ports. " 
                   "If device connected - try reset him")
             sys.exit(1)
         else:
@@ -205,7 +212,7 @@ def test():
                 sys.exit(0)
             n, s = r[0], r[1]
             d.switch_relay(int(n), bool(int(s)))
-        except Exception as ex:
+        except Exception as e:
             print("Error input format, try again...", )
 
 
