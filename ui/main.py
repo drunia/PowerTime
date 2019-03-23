@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
 
         # Central widget
         self.control_frame = QFrame()
+        self.control_frame.setLayout(QGridLayout())
 
         self.scroll_area = QScrollArea(self.centralWidget())
         self.scroll_area.setWidgetResizable(True)
@@ -70,20 +71,21 @@ class MainWindow(QMainWindow):
         all_channels_info = {}
         for plugin in self._get_activated_plugins():
             for k, v in plugin.get_channels_info().items():
-                v.append(plugin)
-                all_channels_info[k] = v
+                info = v.copy()
+                info.append(plugin)
+                all_channels_info[k] = info
         channels = len(all_channels_info)
 
-        # delete this
+        # DEBUG
         #channels = 4
 
         cols = 4 if (channels // 5) > 0 else 2
         print("total channels:", channels)
 
-        # Delete old controls
-        for pc in self.plugin_controls:
-            del pc
-        self.control_frame.setLayout(QGridLayout())
+        # Delete all old controls
+        for c in self.plugin_controls:
+            c.close()
+        self.plugin_controls.clear()
 
         for channel in range(channels):
             control = TimerCashControl(self, channel)
@@ -134,6 +136,7 @@ class MainWindow(QMainWindow):
         del pt
 
     def closeEvent(self, e):
+        # Save settings, when main window close
         self.save_config()
 
     def devices_menu_show(self):
@@ -182,7 +185,7 @@ class MainWindow(QMainWindow):
                             try:
                                 print("_activate_plugins_on_start():", plugin)
                                 p.activate()
-                                p._ICSE0XXAPlugin__activated = True
+                                #p._ICSE0XXAPlugin__activated = True
                             except Exception as e:
                                 errors.append(e)
                         # Show errors
@@ -277,8 +280,7 @@ class PluginSettings(QDialog):
         try:
             self.plugin: PTBasePlugin
             if not self.plugin.get_info()["activated"]:
-                # self.plugin.activate()
-                self.plugin.__activated = True
+                self.plugin.activate()
                 self.activate_btn.setIcon(QIcon("./res/on.ico"))
                 self.activate_btn.setText("Деактивировать")
                 print("Activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
@@ -287,14 +289,15 @@ class PluginSettings(QDialog):
                 self.activate_btn.setIcon(QIcon("./res/off.ico"))
                 self.activate_btn.setText("Активировать")
                 print(self.plugin, "deactivated")
+            # Rebuild timer controls
+            print("Rebuild timer controls")
+            self.parent().add_plugin_controls()
         except Exception as e:
             QMessageBox.critical(self, "Ошибка активации", str(e), QMessageBox.Ok)
 
     def closeEvent(self, e):
         """On plugin settings close"""
-        # Rebuild timer controls
-        print("Rebuild timer controls")
-        self.parent().add_plugin_controls()
+        pass
 
 
 if __name__ == "__main__":

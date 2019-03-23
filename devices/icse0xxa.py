@@ -76,7 +76,7 @@ class ICSE0XXADevice:
         time.sleep(0.01)
         self.__connection.write(bytes([self.__relays_register]))
 
-    def init_device(self, full_init=True):
+    def init_device(self):
         """Turn device to listening mode
         NOTICE:
         In listening mode device not responding for identification
@@ -87,21 +87,19 @@ class ICSE0XXADevice:
         self.__connection.port = self.__port
         self.__connection.timeout = 1
         try:
-            if full_init:
-                self.__connection.open()
-                self.__connection.write(ICSE0XXADevice.ID_COMMAND)
-                time.sleep(0.5)
-                answer = self.__connection.read(1)
-                if len(answer) == 0:
-                    raise Exception("Device not responding. Port: " + self.__port)
-                if len(answer) > 0 and answer[0] not in ICSE0XXADevice.MODELS:
-                    raise Exception("Unknown device '" + hex(answer[0]) + "'")
+            self.__connection.open()
+            self.__connection.write(ICSE0XXADevice.ID_COMMAND)
+            time.sleep(0.5)
+            answer = self.__connection.read(1)
+            if len(answer) > 0 and answer[0] not in ICSE0XXADevice.MODELS:
+                raise Exception("Unknown device '" + hex(answer[0]) + "'")
+            # Port opened, but no answer
+            if len(answer) == 0:
+                print("CAUTION: Port " + self.__port + " opened, but device not responding.\n"
+                      "Device may be already initialized...", file=sys.stderr)
+            elif answer:
                 self.__connection.write(ICSE0XXADevice.READY_COMMAND)
-                self.__connection.close()
-                time.sleep(0.5)
-            else:
-                self.__connection.open()
-                time.sleep(0.5)
+            time.sleep(0.5)
         except Exception as e:
             icse0xxa_eprint("ICSE0XXADevice.init_device(): {}".format(e))
             raise e
@@ -198,7 +196,7 @@ def test():
 
     d = dev_list[0]
     try:
-        d.init_device(True)
+        d.init_device()
     except SerialException as e:
         print(e)
         sys.exit(1)

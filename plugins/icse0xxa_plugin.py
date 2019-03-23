@@ -61,9 +61,11 @@ class ICSE0XXAPlugin(PTBasePlugin):
                 print("No devices!")
 
         for d in self.__dev_list:
-            #d.init_device(not self.__activated)
-            # Delete this below and uncomment above
-            d._ICSE0XXADevice__initialized = True
+            d.init_device()
+
+            # DEBUG. Delete this below and uncomment above
+            #d._ICSE0XXADevice__initialized = True
+
             print("ICSE0XXAPlugin.activate():", d, "initialized")
 
         relay = 0
@@ -76,8 +78,6 @@ class ICSE0XXAPlugin(PTBasePlugin):
 
     def deactivate(self):
         # del devices & close ports
-        for dev in self.__dev_list:
-            del dev
         self.__dev_list = []
         self.__channels = {}
         self.__activated = False
@@ -180,6 +180,7 @@ class Settings(QFrame):
                     "Устройства не найдены!\n\n"
                     "Попробуйте выключить/включить устройство(ва) и выполнить поиск снова.\n"
                 ), QMessageBox.Ok)
+        else:
             self.qlist_model.clear()
         # Add from find_devices()
         self.qlist_model.clear()
