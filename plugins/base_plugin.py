@@ -13,6 +13,11 @@ class ActivateException(Exception):
     """Exception raises with non activated plugin state"""
     pass
 
+class NoDevicesException(Exception):
+    """An exception occurs when no one device finded or loaded from config"""
+    pass
+
+
 
 class PTBasePlugin(metaclass=ABCMeta):
     """Base Power Time plugin"""

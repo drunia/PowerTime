@@ -39,6 +39,12 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     app.setStyle("fusion")
+
+    # Set default app font size
+    f = app.font()
+    f.setPointSize(12)
+    app.setFont(f)
+
     app.setApplicationDisplayName("PowerTime")
     app.setApplicationVersion(VERSION)
     app.setWindowIcon(QIcon("./res/pt.ico"))

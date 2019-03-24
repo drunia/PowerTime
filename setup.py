@@ -8,5 +8,6 @@ setup(
     license='',
     author='drunia',
     author_email='druniax@gmail.com',
-    description='Power by time management client'
+    description='Power by time management client',
+    install_requires=['PyQt5', 'win32gui']
 )

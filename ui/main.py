@@ -7,7 +7,9 @@ from PyQt5.QtCore import QSize, Qt
 from configparser import ConfigParser
 from plugins.icse0xxa_plugin import PTBasePlugin
 from ui.timer_control import *
+from ui.settings import Settings
 import os
+
 
 
 class MainWindow(QMainWindow):
@@ -19,6 +21,7 @@ class MainWindow(QMainWindow):
         self.config = config
         self.loaded_plugins = []
         self.plugin_controls = []
+        self.settings = None
 
         self.plugins = self.find_plugins()
         self._load_plugins()
@@ -40,6 +43,7 @@ class MainWindow(QMainWindow):
 
         # Settings menu
         self.menu_settings = QMenu("Настройки", self)
+        self.menu_settings.aboutToShow.connect(self._init_settings)
         menubar.addMenu(self.menu_settings)
 
         # Devices menu (plugins)
@@ -179,8 +183,8 @@ class MainWindow(QMainWindow):
         if self.config.has_section(pt.PLUGINS_CONF_SECTION):
             for plugin, active_state in self.config[pt.PLUGINS_CONF_SECTION].items():
                 if int(bool(active_state)):
+                    errors = []
                     for p in self.loaded_plugins:
-                        errors = []
                         if p.get_info()["plugin_name"] == plugin:
                             try:
                                 print("_activate_plugins_on_start():", plugin)
@@ -188,19 +192,21 @@ class MainWindow(QMainWindow):
                                 #p._ICSE0XXAPlugin__activated = True
                             except Exception as e:
                                 errors.append(e)
-                        # Show errors
-                        if errors:
-                            err_str = ""
-                            for e in errors:
-                                err_str += str(e) + "\n"
-                            err_str = err_str[:-1]
-                            #QMessageBox.critical(self, "Активация " + plugin, err_str, QMessageBox.Ok)
-                            print(err_str)
+                    # Show errors
+                    if errors:
+                        err_str = ""
+                        for e in errors:
+                            err_str += plugin + ": " + str(e) + "\n"
+                        err_str = err_str[:-1]
+                        QMessageBox.critical(self, "Активация " + plugin, err_str, QMessageBox.Ok)
+                        print("ERR: _activate_plugins_on_start():", err_str)
         del pt
 
     def _build_devices_actions(self):
-        """Build actions for devices menu
-        :return list[QAction]"""
+        """
+        Build actions for devices menu
+        :return list[QAction,...]
+        """
         actions = []
         for plugin in self.loaded_plugins:
             pname = plugin.get_info()["plugin_name"]
@@ -213,6 +219,37 @@ class MainWindow(QMainWindow):
             action.triggered.connect(self.mclick)
             actions.append(action)
         return actions
+
+    def _init_settings(self):
+        """
+        Create settings instance,
+        when menu Settings clicked first time
+        """
+        if not self.settings:
+            print("Settings created")
+            self.settings = Settings(self, self.config)
+
+        self.menu_settings.clear()
+        self.menu_settings.addActions(self._build_settings_actions())
+
+    def _build_settings_actions(self):
+        """
+        Build actions for settings menu
+        :return list[QAction,...]
+        """
+        actions = []
+        for item in self.settings.tab_names.keys():
+            action = QAction(item, self)
+            action.setFont(self.menuBar().font())
+            action.setStatusTip("Открыть настройки: " + item)
+            action.setData(len(actions))
+            action.triggered.connect(self.menu_open_settings_tab)
+            actions.append(action)
+        return actions
+
+    def menu_open_settings_tab(self):
+        index = qApp.sender().data()
+        self.settings.show(index)
 
     def mclick(self):
         """ Mouse click from devices menu """

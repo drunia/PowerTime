@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from devices.icse0xxa import ICSE0XXADevice, load_devices_from_config, save_devices_to_config, find_devices
-from plugins.base_plugin import PTBasePlugin, ActivateException, SwitchException
+from plugins.base_plugin import PTBasePlugin, ActivateException, SwitchException, NoDevicesException
 from PyQt5.Qt import (QFrame, QWidget, QHBoxLayout, QVBoxLayout, QListView, QStandardItemModel, QStandardItem,
                       QPushButton, QLabel, QIcon, QApplication, QMessageBox, QPixmap)
 from PyQt5.QtCore import QSize, QModelIndex, Qt
@@ -53,20 +53,14 @@ class ICSE0XXAPlugin(PTBasePlugin):
         # Load from config file first
         self.__dev_list = load_devices_from_config()
         if len(self.__dev_list) == 0:
-            print("Try find devices on serial ports...")
-            self.__dev_list = find_devices()
-            if len(self.__dev_list) > 0:
-                save_devices_to_config(self.__dev_list)
-            else:
-                print("No devices!")
+            raise NoDevicesException("Activation error: No devices!")
 
+        # Init devices
         for d in self.__dev_list:
             d.init_device()
-
-            # DEBUG. Delete this below and uncomment above
-            #d._ICSE0XXADevice__initialized = True
-
             print("ICSE0XXAPlugin.activate():", d, "initialized")
+            # DEBUG. Delete this below and uncomment above
+            # d._ICSE0XXADevice__initialized = True
 
         relay = 0
         for d in self.__dev_list:
@@ -152,6 +146,13 @@ class Settings(QFrame):
 
         # Load devices
         devs = load_devices_from_config()
+        self.build_dev_list(devs)
+
+        self.st_lb.setText("Загружено утсройств: {} ".format(len(devs)))
+        self.show()
+
+    def build_dev_list(self, devs):
+        """Create list in QListView from devs[]"""
         for d in devs:
             item = QStandardItem(d.name())
             item.setCheckable(True)
@@ -160,8 +161,6 @@ class Settings(QFrame):
             item.setData(d)
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
-        self.st_lb.setText("Загружено утсройств: {} ".format(len(devs)))
-        self.show()
 
     def qlist_sel_changed(self, item1, item2):
         if item1.row() != item2.row():
@@ -172,6 +171,7 @@ class Settings(QFrame):
         self.st_lb.setText("Выполняется поиск...")
         QApplication.processEvents()
         devs = find_devices()
+        self.st_lb.setText("Найдено утсройств: {} ".format(len(devs)))
         if len(devs) == 0:
             self.st_lb.setText("")
             QMessageBox.warning(
@@ -180,18 +180,21 @@ class Settings(QFrame):
                     "Устройства не найдены!\n\n"
                     "Попробуйте выключить/включить устройство(ва) и выполнить поиск снова.\n"
                 ), QMessageBox.Ok)
-        else:
-            self.qlist_model.clear()
-        # Add from find_devices()
+            return
         self.qlist_model.clear()
+        # Add active devices
+        if self.plugin.get_info()["activated"]:
+            for d in self.plugin._ICSE0XXAPlugin__dev_list:
+                print("Save active device:", d)
+                devs.append(d)
+        # Add from find_devices()
         for d in devs:
             item = QStandardItem(d.name())
             item.setCheckable(True)
             item.setData(d)
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
-        self.st_lb.setText("Найдено утсройств: {} ".format(len(devs)))
-        save_devices_to_config(devs)
+
 
     def save_settings(self):
         devs = []
@@ -200,13 +203,17 @@ class Settings(QFrame):
             item: QStandardItem = m.item(i)
             if item.checkState():
                 devs.append(item.data())
+        if m.rowCount() > 0 and len(devs) == 0:
+            if QMessageBox.question(self, "Запись в файл", "Не отмечена ни одна запись в списке.\n"
+                                    "Все ранее сохраненые устройства будут отчищены, все верно?",
+                                    QMessageBox.Yes, QMessageBox.Cancel) == QMessageBox.Cancel:
+                return
+        save_devices_to_config(devs)
         if len(devs) > 0:
-            save_devices_to_config(devs)
             QMessageBox.information(self, "Запись в файл",
                                     "Записано {} устройств".format(len(devs)), QMessageBox.Ok)
-        elif m.rowCount() > 0:
-            QMessageBox.warning(self,
-                                "Запись в файл", "Отметьте устройство для сохранения", QMessageBox.Ok)
+        m.clear()
+        self.build_dev_list(devs)
 
     def qlist_item_clicked(self, item: QModelIndex):
         try:

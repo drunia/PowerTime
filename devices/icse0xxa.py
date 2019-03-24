@@ -36,7 +36,7 @@ class ICSE0XXADevice:
         self.__relays_register = 0
 
     def __del__(self):
-        print("delete device")
+        print("ICSE0XXADevice.__del__():", self)
         if self.__connection is not None:
             self.__connection.close()
 
@@ -95,7 +95,8 @@ class ICSE0XXADevice:
                 raise Exception("Unknown device '" + hex(answer[0]) + "'")
             # Port opened, but no answer
             if len(answer) == 0:
-                print("CAUTION: Port " + self.__port + " opened, but device not responding.\n"
+                print("ICSE0XXADevice.init_device():",
+                      "CAUTION: Port " + self.__port + " opened, but device not responding.",
                       "Device may be already initialized...", file=sys.stderr)
             elif answer:
                 self.__connection.write(ICSE0XXADevice.READY_COMMAND)
