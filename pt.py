@@ -55,7 +55,7 @@ if __name__ == "__main__":
     if os.name == "nt":
         import devices.icsex00a_port_state_notificator_win
 
-        #port_notification = devices.icsex00a_port_state_notificator_win.PortStateNotificator()
+        port_notification = devices.icsex00a_port_state_notificator_win.PortStateNotificator()
     elif os.name == "linux":
         import devices.icsex00a_port_state_notificator_linux
 

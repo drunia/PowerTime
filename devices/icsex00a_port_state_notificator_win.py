@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from ctypes import *
-import win32.win32api as win32api
-import win32.win32console as win32con
-import win32.win32gui as win32gui
-
 from PySide.QtCore import QObject, Signal
+from win32.lib import win32con
+from win32 import win32gui
+from win32 import win32api
 
 """
 Module for listen enable/disable ports to re-init icse00xa module 
