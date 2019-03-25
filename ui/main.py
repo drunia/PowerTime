@@ -151,7 +151,8 @@ class MainWindow(QMainWindow):
     def find_plugins(self, plugins_dir="./plugins"):
         """Search device-plugins in modules dir
         :return list[Plugin_Class...,]"""
-        import pkgutil, inspect
+        import pkgutil
+        import inspect
         plugins = []
         # Find modules with classes inherited from PTBasePlugin
         mod_info_list = list(pkgutil.iter_modules([plugins_dir]))
@@ -165,7 +166,8 @@ class MainWindow(QMainWindow):
                         print("{}(): Plugin class finded: {}".format(inspect.stack()[0][3], cls[1].__name__))
                         plugins.append(cls[1])
                         break
-        del pkgutil, inspect
+        del pkgutil
+        del inspect
         print("find_plugins():", len(plugins))
         return plugins
 
@@ -223,8 +225,8 @@ class MainWindow(QMainWindow):
         when menu Settings clicked first time
         """
         if not self.settings:
-            print("Settings created")
             self.settings = Settings(self, self.config)
+            print("Settings created")
 
         self.menu_settings.clear()
         self.menu_settings.addActions(self._build_settings_actions())
@@ -245,7 +247,7 @@ class MainWindow(QMainWindow):
         return actions
 
     def menu_open_settings_tab(self):
-        index = qApp.sender().data()
+        index = QApplication.sender(self).data()
         self.settings.show(index)
 
     def mclick(self):
@@ -277,6 +279,8 @@ class PluginSettings(QDialog):
 
         plugin_frame = QFrame()
         plugin_frame.setMinimumSize(400, 200)
+
+        # Integrate plugin settings
         self.plugin.build_settings(plugin_frame)
 
         self.activate_btn.setFixedSize(150, 30)

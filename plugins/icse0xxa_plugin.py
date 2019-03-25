@@ -81,7 +81,7 @@ class ICSE0XXAPlugin(PTBasePlugin):
 
 
 class Settings(QFrame):
-    def __init__(self, plugin: ICSE0XXAPlugin, parent=None):
+    def __init__(self, plugin, parent=None):
         super().__init__(parent)
         self.st_lb = QLabel()
         self.img_lb = QLabel()
@@ -112,7 +112,7 @@ class Settings(QFrame):
         f.setPointSize(12)
         self.qlist.setFont(f)
         self.qlist.clicked.connect(self.qlist_item_clicked)
-        #self.qlist.selectionModel().currentChanged.connect(self.qlist_sel_changed)
+        self.qlist.selectionModel().currentChanged = lambda *x : print(x)
         self.vboxl.addWidget(self.qlist)
 
         # Search button

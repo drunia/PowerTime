@@ -39,9 +39,9 @@ class ICSE0XXADevice:
         print("Created:", self)
 
     def __del__(self):
-        print("ICSE0XXADevice.__del__():", self)
-        if self.__connection:
-            self.__connection.close()
+        print("ICSE0XXADevice.__del__()")
+        #if self.__connection:
+        #    self.__connection.close()
 
     def relays_count(self):
         self.__chek_init()
