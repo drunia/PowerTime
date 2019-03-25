@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from devices.icse0xxa import ICSE0XXADevice, load_devices_from_config, save_devices_to_config, find_devices
+from devices.icse0xxa import load_devices_from_config, save_devices_to_config, find_devices
 from plugins.base_plugin import PTBasePlugin, ActivateException, SwitchException, NoDevicesException
-from PyQt5.Qt import (QFrame, QWidget, QHBoxLayout, QVBoxLayout, QListView, QStandardItemModel, QStandardItem,
-                      QPushButton, QLabel, QIcon, QApplication, QMessageBox, QPixmap)
-from PyQt5.QtCore import QSize, QModelIndex, Qt
+from PySide.QtGui import (QFrame, QWidget, QHBoxLayout, QVBoxLayout, QListView, QStandardItemModel, QStandardItem,
+                          QPushButton, QLabel, QIcon, QApplication, QMessageBox, QPixmap)
+from PySide.QtCore import QSize, QModelIndex, Qt
 
 
 class ICSE0XXAPlugin(PTBasePlugin):
@@ -112,7 +112,7 @@ class Settings(QFrame):
         f.setPointSize(12)
         self.qlist.setFont(f)
         self.qlist.clicked.connect(self.qlist_item_clicked)
-        self.qlist.selectionModel().currentChanged.connect(self.qlist_sel_changed)
+        #self.qlist.selectionModel().currentChanged.connect(self.qlist_sel_changed)
         self.vboxl.addWidget(self.qlist)
 
         # Search button
@@ -200,7 +200,7 @@ class Settings(QFrame):
         devs = []
         m = self.qlist_model
         for i in range(0, m.rowCount()):
-            item: QStandardItem = m.item(i)
+            item = m.item(i)
             if item.checkState():
                 devs.append(item.data())
         if m.rowCount() > 0 and len(devs) == 0:
@@ -217,7 +217,7 @@ class Settings(QFrame):
 
     def qlist_item_clicked(self, item: QModelIndex):
         try:
-            dev: ICSE0XXADevice = self.qlist_model.item(item.row()).data()
+            dev = self.qlist_model.item(item.row()).data()
             devs = {
                 0xAB: ["ICSE012A - 4х канальный модуль без дополнительного питания", "icse012A.jpg"],
                 0xAD: ["ICSE013A - 2х канальный модуль без дополнительного питания", "icse013A.jpg"],

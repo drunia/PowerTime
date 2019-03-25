@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import QSize, Qt
-from configparser import ConfigParser
-from plugins.icse0xxa_plugin import PTBasePlugin
-from ui.timer_control import *
-from ui.settings import Settings
 import os
 
+from PySide.QtGui import *
+from PySide.QtCore import Qt, QSize
+from ui.timer_control import *
+from ui.settings import Settings
 
 
 class MainWindow(QMainWindow):
@@ -35,8 +32,8 @@ class MainWindow(QMainWindow):
         self.resize(800, 600)
 
         # Main menu
-        menubar: QMenuBar = self.menuBar()
-        menufont: QFont = menubar.font()
+        menubar = self.menuBar()
+        menufont = menubar.font()
         menufont.setPointSize(13)
         menubar.setFont(menufont)
         menubar.setMinimumHeight(40)
@@ -65,7 +62,7 @@ class MainWindow(QMainWindow):
 
         # Statusbar
         self.statusBar().setFont(menubar.font())
-        self.statusBar().showMessage("Вeрсия: " + qApp.applicationVersion())
+        self.statusBar().showMessage("Вeрсия: " + QApplication.applicationVersion())
         self.statusBar()
 
         self.show()
@@ -106,7 +103,7 @@ class MainWindow(QMainWindow):
 
     def switch_event(self, control, state: bool):
         try:
-            plugin: PTBasePlugin = self.loaded_plugins[0]
+            plugin = self.loaded_plugins[0]
             plugin.switch(control.channel, state)
         except Exception as e:
             print(e)
@@ -145,7 +142,7 @@ class MainWindow(QMainWindow):
 
     def devices_menu_show(self):
         for action in self.menu_devices.actions():
-            plugin: PTBasePlugin = action.data()
+            plugin = action.data()
             if plugin.get_info()["activated"]:
                 action.setIcon(QIcon("./res/on.ico"))
             else:
@@ -159,7 +156,7 @@ class MainWindow(QMainWindow):
         # Find modules with classes inherited from PTBasePlugin
         mod_info_list = list(pkgutil.iter_modules([plugins_dir]))
         for module in mod_info_list:
-            m = __import__("plugins." + module.name, fromlist=['object'])
+            m = __import__("plugins." + module[1], fromlist=['object'])
             clslist = inspect.getmembers(m, inspect.isclass)
             for cls in clslist:
                 bases = cls[1].__mro__
@@ -253,7 +250,8 @@ class MainWindow(QMainWindow):
 
     def mclick(self):
         """ Mouse click from devices menu """
-        plugin = qApp.sender().data()
+        plugin = QApplication.sender(self).data()
+        print(plugin)
         try:
             psettings = PluginSettings(self, plugin)
             psettings.show()
@@ -315,7 +313,7 @@ class PluginSettings(QDialog):
 
     def activate_plugin(self):
         try:
-            self.plugin: PTBasePlugin
+            self.plugin
             if not self.plugin.get_info()["activated"]:
                 self.plugin.activate()
                 self.activate_btn.setIcon(QIcon("./res/on.ico"))
@@ -346,4 +344,4 @@ if __name__ == "__main__":
     app = QApplication([])
     mw = MainWindow(ConfigParser())
     mw.show()
-    app.exec()
+    app.exec_()

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import time, sys
+import time
+import sys
 
 from serial import Serial, SerialException, SerialTimeoutException
 from serial.tools import list_ports
@@ -35,9 +36,11 @@ class ICSE0XXADevice:
         self.__connection = None
         self.__relays_register = 0
 
+        print("Created:", self)
+
     def __del__(self):
         print("ICSE0XXADevice.__del__():", self)
-        if self.__connection is not None:
+        if self.__connection:
             self.__connection.close()
 
     def relays_count(self):
@@ -98,7 +101,7 @@ class ICSE0XXADevice:
                 print("ICSE0XXADevice.init_device():",
                       "CAUTION: Port " + self.__port + " opened, but device not responding.",
                       "Device may be already initialized...", file=sys.stderr)
-            elif answer:
+            else:
                 self.__connection.write(ICSE0XXADevice.READY_COMMAND)
             time.sleep(0.5)
         except Exception as e:

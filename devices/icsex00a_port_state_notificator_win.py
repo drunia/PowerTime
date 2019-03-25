@@ -1,11 +1,12 @@
 #!/usb/bin/env python3
 # -*- coding: utf-8 -*-
 
-import win32api
-import win32con
-import win32gui
 from ctypes import *
-from PyQt5.QtCore import pyqtSignal, QObject
+import win32.win32api as win32api
+import win32.win32console as win32con
+import win32.win32gui as win32gui
+
+from PySide.QtCore import QObject, Signal
 
 """
 Module for listen enable/disable ports to re-init icse00xa module 
@@ -50,7 +51,7 @@ class PortStateNotificator(QObject):
     :param str - port name
     :param bool - connect state
     """
-    state_changed = pyqtSignal(str, bool)
+    state_changed = Signal(str, bool)
 
     def __init__(self):
         super().__init__()

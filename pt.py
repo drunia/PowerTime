@@ -5,8 +5,7 @@ import os
 import sys
 import configparser
 
-from PyQt5.QtWidgets import QApplication, QDesktopWidget
-from PyQt5.QtGui import QIcon
+from PySide.QtGui import QApplication, QIcon
 
 
 START_DIR = os.getcwd()
@@ -45,10 +44,9 @@ if __name__ == "__main__":
     f.setPointSize(12)
     app.setFont(f)
 
-    app.setApplicationDisplayName("PowerTime")
+    app.setApplicationName("PowerTime")
     app.setApplicationVersion(VERSION)
     app.setWindowIcon(QIcon("./res/pt.ico"))
-    desktop: QDesktopWidget = app.desktop()
 
     mw = MainWindow(config)
 
@@ -57,7 +55,7 @@ if __name__ == "__main__":
     if os.name == "nt":
         import devices.icsex00a_port_state_notificator_win
 
-        port_notification = devices.icsex00a_port_state_notificator_win.PortStateNotificator()
+        #port_notification = devices.icsex00a_port_state_notificator_win.PortStateNotificator()
     elif os.name == "linux":
         import devices.icsex00a_port_state_notificator_linux
 
@@ -69,4 +67,4 @@ if __name__ == "__main__":
         print("port_notification created")
         port_notification.state_changed.connect(port_state_changed)
 
-    sys.exit(app.exec())
+    sys.exit(app.exec_())

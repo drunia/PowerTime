@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
-from abc import ABCMeta, abstractmethod, abstractproperty
-from PyQt5.QtWidgets import QWidget
+from abc import ABCMeta, abstractmethod
+from PySide.QtGui import QWidget
 
 
 class SwitchException(Exception):
     """Exception raises on problem in switch"""
     pass
 
+
 class ActivateException(Exception):
     """Exception raises with non activated plugin state"""
     pass
 
+
 class NoDevicesException(Exception):
     """An exception occurs when no one device finded or loaded from config"""
     pass
-
 
 
 class PTBasePlugin(metaclass=ABCMeta):

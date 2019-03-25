@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.Qt import (QWidget, QApplication, QTabWidget, QFrame, QVBoxLayout, QHBoxLayout,
-                      QCheckBox, QFormLayout, QFont, QFontMetrics, QSpinBox)
-from PyQt5.Qt import Qt
 import pt
+
+from PySide.QtGui import (QWidget, QApplication, QTabWidget, QFrame, QVBoxLayout, QHBoxLayout,
+                          QCheckBox, QFormLayout, QSpinBox)
+from PySide.QtCore import Qt
 
 
 class Settings(QWidget):
@@ -54,7 +55,7 @@ class General(QFrame):
         self._setup_ui()
 
     def _setup_ui(self):
-        fm: QFontMetrics = self.fontMetrics()
+        fm = self.fontMetrics()
 
         self.save_window_geometry_cb = QCheckBox("Сохранять размеры и положение главного окна", self)
         self.activate_plugin_on_start_cb = QCheckBox("Активировать загруженные плагины при старте", self)
@@ -64,7 +65,6 @@ class General(QFrame):
         self.default_font_size.setMinimum(8)
         self.default_font_size.setMaximum(14)
         self.default_font_size.setFixedWidth(fm.widthChar("0") * 6)
-
 
         # Layouts
         form_lay = QFormLayout()
@@ -97,4 +97,4 @@ if __name__ == "__main__":
     app = QApplication([])
     settings = Settings(None, config)
     settings.show(0)
-    app.exec()
+    app.exec_()

@@ -9,5 +9,5 @@ setup(
     author='drunia',
     author_email='druniax@gmail.com',
     description='Power by time management client',
-    install_requires=['PyQt5', 'win32gui']
+    install_requires=['PyQt5', 'win32gui', 'serial', 'PySide']
 )
