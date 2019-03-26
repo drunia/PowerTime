@@ -41,7 +41,10 @@ if __name__ == "__main__":
 
     # Set default app font size
     f = app.font()
-    f.setPointSize(12)
+    if config.has_option(APP_MAIN_SECTION, "default_font_size"):
+        f.setPointSize(config.getint(APP_MAIN_SECTION, "default_font_size", fallback=12))
+    else:
+        f.setPointSize(12)
     app.setFont(f)
 
     app.setApplicationName("PowerTime")

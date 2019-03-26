@@ -290,7 +290,7 @@ class TimerCashControl(QFrame):
 
     # Set control tittle
     def set_control_tittle(self, tittle="Канал "):
-        self.tittle_lb.setText(tittle + str(self.channel + 1))
+        self.tittle_lb.setText(tittle + " " + str(self.channel + 1))
 
     # Display time & cash
     def display(self):

@@ -41,10 +41,10 @@ class ICSE0XXAPlugin(PTBasePlugin):
 
     def switch(self, channel, state):
         self.__check_activated()
-        if channel+1 > len(self.__channels):
+        if channel + 1 > len(self.__channels):
             raise SwitchException(
                 "Channel {}  biggest of total channels {} "
-                "on connected devices.".format(channel+1, len(self.__channels))
+                "on connected devices.".format(channel + 1, len(self.__channels))
             )
         dev, ch = self.__channels[channel]
         dev.switch_relay(ch, state)
@@ -76,6 +76,11 @@ class ICSE0XXAPlugin(PTBasePlugin):
         self.__channels = {}
         self.__activated = False
 
+    def devices(self):
+        """Return current initialized devices"""
+        return self.__dev_list
+
+
     def build_settings(self, widget: QWidget):
         Settings(self, widget)
 
@@ -88,10 +93,14 @@ class Settings(QFrame):
         self.info_lb = QLabel()
         self.vboxl, self.vboxr = QVBoxLayout(), QVBoxLayout()
         self.hbox = QHBoxLayout()
-        self.qlist = QListView()
-        self.qlist_model = QStandardItemModel(self.qlist)
         self.find_button = QPushButton(QIcon("./res/search.ico"), "Поиск устройств")
         self.save_button = QPushButton(QIcon("./res/save.ico"), "Записать")
+
+        self.qlist = QListView()
+        self.qlist_model = QStandardItemModel(self.qlist)
+        # For fix run-time error: Internal C++ object (PySide.QtGui.QItemSelectionModel) already deleted.
+        self.qlist_sel_model = None
+
         self.plugin = plugin
         self.setup_ui()
 
@@ -112,7 +121,8 @@ class Settings(QFrame):
         f.setPointSize(12)
         self.qlist.setFont(f)
         self.qlist.clicked.connect(self.qlist_item_clicked)
-        self.qlist.selectionModel().currentChanged = lambda *x : print(x)
+        self.qlist_sel_model = self.qlist.selectionModel()
+        self.qlist_sel_model.currentChanged.connect(self.qlist_sel_changed)
         self.vboxl.addWidget(self.qlist)
 
         # Search button
@@ -132,6 +142,10 @@ class Settings(QFrame):
         # Info label
         self.info_lb.setWordWrap(True)
         self.info_lb.setFont(f)
+        self.info_lb.setText(
+            "Подсказка:\nДля удаления устройства\nсо списка "
+            "нужно снять галочку\nи затем нажать кнопку Записать"
+        )
         self.vboxr.addWidget(self.info_lb, alignment=Qt.AlignTop)
 
         # Image label
@@ -144,8 +158,8 @@ class Settings(QFrame):
         self.st_lb.setText("Status text")
         self.vboxr.addWidget(self.st_lb, alignment=Qt.AlignBottom)
 
-        # Load devices
-        devs = load_devices_from_config()
+        # Display devices
+        devs = self.plugin.devices()
         self.build_dev_list(devs)
 
         self.st_lb.setText("Загружено утсройств: {} ".format(len(devs)))
@@ -163,7 +177,7 @@ class Settings(QFrame):
             self.qlist_model.appendRow(item)
 
     def qlist_sel_changed(self, item1, item2):
-        if item1.row() != item2.row():
+        if item1.row() != item2.row() and item2.row() > 0:
             self.qlist.clicked[QModelIndex].emit(item1)
 
     # Search devices on serial bus
@@ -184,7 +198,7 @@ class Settings(QFrame):
         self.qlist_model.clear()
         # Add active devices
         if self.plugin.get_info()["activated"]:
-            for d in self.plugin._ICSE0XXAPlugin__dev_list:
+            for d in self.plugin.devices():
                 print("Save active device:", d)
                 devs.append(d)
         # Add from find_devices()
@@ -195,7 +209,6 @@ class Settings(QFrame):
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
 
-
     def save_settings(self):
         devs = []
         m = self.qlist_model
@@ -204,7 +217,8 @@ class Settings(QFrame):
             if item.checkState():
                 devs.append(item.data())
         if m.rowCount() > 0 and len(devs) == 0:
-            if QMessageBox.question(self, "Запись в файл", "Не отмечена ни одна запись в списке.\n"
+            if QMessageBox.question(self, "Запись в файл",
+                                    "Не отмечена ни одна запись в списке.\n"
                                     "Все ранее сохраненые устройства будут отчищены, все верно?",
                                     QMessageBox.Yes, QMessageBox.Cancel) == QMessageBox.Cancel:
                 return

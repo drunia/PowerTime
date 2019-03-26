@@ -29,13 +29,23 @@ class MainWindow(QMainWindow):
 
     def _setup_ui(self):
         self.setWindowTitle("PowerTime")
-        self.resize(800, 600)
+        # Size from config
+        if self.config.has_section(pt.APP_MAIN_SECTION):
+            width, height = 1024, 768
+            try:
+                width = self.config.getint(pt.APP_MAIN_SECTION, "width", fallback=1024)
+                height = self.config.getint(pt.APP_MAIN_SECTION, "height", fallback=768)
+            except ValueError:
+                pass
+            self.resize(width, height)
+            if self.config.getboolean(pt.APP_MAIN_SECTION, "maximized", fallback=False):
+                self.showMaximized()
+        else:
+            # Default: show maximized
+            self.showMaximized()
 
         # Main menu
         menubar = self.menuBar()
-        menufont = menubar.font()
-        menufont.setPointSize(13)
-        menubar.setFont(menufont)
         menubar.setMinimumHeight(40)
 
         # Settings menu
@@ -61,7 +71,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.scroll_area)
 
         # Statusbar
-        self.statusBar().setFont(menubar.font())
         self.statusBar().showMessage("Вeрсия: " + QApplication.applicationVersion())
         self.statusBar()
 
@@ -99,6 +108,8 @@ class MainWindow(QMainWindow):
                 plugin_info = ch_info[2].get_info()["plugin_name"] + \
                               " - " + str(ch_info[0]) + " - channel: " + str(ch_info[1])
                 control.tittle_lb.setToolTip(plugin_info)
+                if self.config.has_option(pt.APP_MAIN_SECTION, "default_channel_name"):
+                    control.set_control_tittle(self.config.get(pt.APP_MAIN_SECTION, "default_channel_name"))
         self.scroll_area.setWidget(self.control_frame)
 
     def switch_event(self, control, state: bool):
@@ -122,8 +133,9 @@ class MainWindow(QMainWindow):
         if not self.config.has_section(pt.APP_MAIN_SECTION):
             self.config.add_section(pt.APP_MAIN_SECTION)
         self.config[pt.APP_MAIN_SECTION]["maximized"] = str(int(self.isMaximized()))
-        self.config[pt.APP_MAIN_SECTION]["height"] = str(self.height())
-        self.config[pt.APP_MAIN_SECTION]["width"] = str(self.width())
+        if not self.isMaximized():
+            self.config[pt.APP_MAIN_SECTION]["height"] = str(self.height())
+            self.config[pt.APP_MAIN_SECTION]["width"] = str(self.width())
         # Plugins
         for plugin in self.loaded_plugins:
             if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
@@ -188,7 +200,6 @@ class MainWindow(QMainWindow):
                             try:
                                 print("_activate_plugins_on_start():", plugin)
                                 p.activate()
-                                #p._ICSE0XXAPlugin__activated = True
                             except Exception as e:
                                 errors.append(e)
                     # Show errors
@@ -210,7 +221,6 @@ class MainWindow(QMainWindow):
         for plugin in self.loaded_plugins:
             pname = plugin.get_info()["plugin_name"]
             action = QAction(pname, self)
-            action.setFont(self.menuBar().font())
             action.setCheckable(True)
             action.setChecked(True)
             action.setData(plugin)  # Set reference to us plugin into menu
@@ -237,10 +247,9 @@ class MainWindow(QMainWindow):
         :return list[QAction,...]
         """
         actions = []
-        for item in self.settings.tab_names.keys():
-            action = QAction(item, self)
-            action.setFont(self.menuBar().font())
-            action.setStatusTip("Открыть настройки: " + item)
+        for item in self.settings.tab_names:
+            action = QAction(item[0], self)
+            action.setStatusTip("Открыть настройки: " + item[0])
             action.setData(len(actions))
             action.triggered.connect(self.menu_open_settings_tab)
             actions.append(action)
@@ -253,7 +262,6 @@ class MainWindow(QMainWindow):
     def mclick(self):
         """ Mouse click from devices menu """
         plugin = QApplication.sender(self).data()
-        print(plugin)
         try:
             psettings = PluginSettings(self, plugin)
             psettings.show()
@@ -283,7 +291,7 @@ class PluginSettings(QDialog):
         # Integrate plugin settings
         self.plugin.build_settings(plugin_frame)
 
-        self.activate_btn.setFixedSize(150, 30)
+        self.activate_btn.setFixedSize(180, 30)
         self.activate_btn.setCheckable(True)
         if self.plugin.get_info()["activated"]:
             self.activate_btn.setIcon(QIcon("./res/on.ico"))
@@ -295,7 +303,7 @@ class PluginSettings(QDialog):
         self.activate_btn.clicked.connect(self.activate_plugin)
 
         self.plugin_info_lb.setWordWrap(True)
-        self.plugin_info_lb.setFixedWidth(plugin_frame.width() - 150)
+        self.plugin_info_lb.setFixedWidth(plugin_frame.width() - 140)
         self.plugin_info_lb.setText(
             "<b>{}</b> - {} <br>Автор: <b>{}</b>, Версия: <b>{}</b>".format(
                 self.plugin.get_info()["plugin_name"],
@@ -324,6 +332,17 @@ class PluginSettings(QDialog):
                 self.activate_btn.setText("Деактивировать")
                 print("Activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
             else:
+                # Check if plugin used in this time
+                for p_control in self.parent().plugin_controls:
+                    if not p_control.stopped:
+                        if QMessageBox.warning(
+                                self, "Внимание!",
+                                "В данный момент плагина находится в использовании.\n"
+                                "Деактивация плагина приведет к утрате результатов работы\n"
+                                "Все равно продолжить ?",
+                                QMessageBox.Yes | QMessageBox.No
+                                ) == QMessageBox.No:
+                            return
                 self.plugin.deactivate()
                 self.activate_btn.setIcon(QIcon("./res/off.ico"))
                 self.activate_btn.setText("Активировать")
