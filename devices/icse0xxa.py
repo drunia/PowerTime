@@ -40,7 +40,11 @@ class ICSE0XXADevice:
 
     def __del__(self):
         print("ICSE0XXADevice.__del__()")
-        #if self.__connection:
+
+        # ICSE0XXADevice.__del__()
+        # TypeError: 'NoneType' object is not callable
+        #
+        # if self.__connection:
         #    self.__connection.close()
 
     def relays_count(self):

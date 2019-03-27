@@ -128,10 +128,12 @@ class Settings(QFrame):
         # Search button
         self.find_button.setIconSize(QSize(20, 20))
         self.find_button.clicked.connect(self.find_devices)
+        self.find_button.setFont(f)
 
         # Save Button
         self.save_button.setIconSize(QSize(20, 20))
         self.save_button.clicked.connect(self.save_settings)
+        self.save_button.setFont(f)
 
         # Buttons H layout
         butt_lay = QHBoxLayout()
@@ -172,7 +174,6 @@ class Settings(QFrame):
             item.setCheckable(True)
             item.setCheckState(Qt.Checked)
             item.setEditable(False)
-            item.setData(d)
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
 
@@ -205,7 +206,6 @@ class Settings(QFrame):
         for d in devs:
             item = QStandardItem(d.name())
             item.setCheckable(True)
-            item.setData(d)
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
 

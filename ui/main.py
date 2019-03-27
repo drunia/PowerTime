@@ -303,7 +303,7 @@ class PluginSettings(QDialog):
         self.activate_btn.clicked.connect(self.activate_plugin)
 
         self.plugin_info_lb.setWordWrap(True)
-        self.plugin_info_lb.setFixedWidth(plugin_frame.width() - 140)
+        self.plugin_info_lb.setFixedWidth(plugin_frame.width() - 180)
         self.plugin_info_lb.setText(
             "<b>{}</b> - {} <br>Автор: <b>{}</b>, Версия: <b>{}</b>".format(
                 self.plugin.get_info()["plugin_name"],

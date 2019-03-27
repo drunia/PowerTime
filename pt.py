@@ -5,7 +5,7 @@ import os
 import sys
 import configparser
 
-from PySide.QtGui import QApplication, QIcon
+from PySide.QtGui import QApplication, QIcon, QStyleFactory
 
 
 START_DIR = os.getcwd()
@@ -37,7 +37,12 @@ if __name__ == "__main__":
     config = read_config(MAIN_CONF_FILE)
 
     app = QApplication(sys.argv)
-    app.setStyle("fusion")
+
+    for style in QStyleFactory.keys():
+        print(style)
+
+    app.setStyle("Cleanlooks")
+
 
     # Set default app font size
     f = app.font()
