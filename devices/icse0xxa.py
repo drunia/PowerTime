@@ -40,7 +40,6 @@ class ICSE0XXADevice:
 
     def __del__(self):
         print("ICSE0XXADevice.__del__()")
-
         # ICSE0XXADevice.__del__()
         # TypeError: 'NoneType' object is not callable
         #

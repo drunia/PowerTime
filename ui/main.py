@@ -24,8 +24,11 @@ class MainWindow(QMainWindow):
         self._load_plugins()
 
         self._setup_ui()
-        self._activate_plugins_on_start()
-        self.add_plugin_controls()
+
+        if config.has_section(pt.APP_MAIN_SECTION):
+            if config.getboolean(pt.APP_MAIN_SECTION, "activate_plugin_on_start", fallback=False):
+                self._activate_plugins_on_start()
+                self.add_plugin_controls()
 
     def _setup_ui(self):
         self.setWindowTitle("PowerTime")
@@ -170,8 +173,8 @@ class MainWindow(QMainWindow):
         mod_info_list = list(pkgutil.iter_modules([plugins_dir]))
         for module in mod_info_list:
             m = __import__("plugins." + module[1], fromlist=['object'])
-            clslist = inspect.getmembers(m, inspect.isclass)
-            for cls in clslist:
+            classlist = inspect.getmembers(m, inspect.isclass)
+            for cls in classlist:
                 bases = cls[1].__mro__
                 for b in bases:
                     if b.__name__ == "PTBasePlugin" and not cls[1].__name__ == "PTBasePlugin":

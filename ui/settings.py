@@ -33,7 +33,7 @@ class Settings(QWidget):
         vbox_lay.addWidget(self.tabs)
 
         # Accept settings button
-        self.accept_btn = QPushButton("Применить && Закрыть")
+        self.accept_btn = QPushButton("Применить")
         self.accept_btn.clicked.connect(self.close)
         self.accept_btn.setSizePolicy(
             QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
@@ -93,6 +93,7 @@ class General(QFrame):
 
         # UI style
         self.style_cb = QComboBox()
+        self.style_cb.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 
         # Layouts
         form_lay = QFormLayout()
