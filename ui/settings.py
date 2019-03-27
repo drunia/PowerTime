@@ -4,7 +4,8 @@
 import pt
 
 from PySide.QtGui import (QWidget, QApplication, QTabWidget, QFrame, QVBoxLayout, QHBoxLayout,
-                          QCheckBox, QFormLayout, QSpinBox, QLineEdit, QMessageBox)
+                          QCheckBox, QFormLayout, QSpinBox, QLineEdit, QMessageBox, QPushButton,
+                          QSizePolicy, QStyleFactory, QComboBox)
 from PySide.QtCore import Qt
 
 
@@ -31,6 +32,14 @@ class Settings(QWidget):
         vbox_lay = QVBoxLayout(self)
         vbox_lay.addWidget(self.tabs)
 
+        # Accept settings button
+        self.accept_btn = QPushButton("Применить && Закрыть")
+        self.accept_btn.clicked.connect(self.close)
+        self.accept_btn.setSizePolicy(
+            QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        )
+        vbox_lay.addWidget(self.accept_btn, alignment=Qt.AlignRight | Qt.AlignBottom)
+
     def build_tabs(self):
         for tab_name in self.tab_names:
             tab_frame = tab_name[1](self.config)
@@ -42,6 +51,7 @@ class Settings(QWidget):
     def closeEvent(self, e):
         for tab_index in range(self.tabs.count()):
             self.tabs.widget(tab_index).set_config()
+        pt.set_ui_settings(self.config)
         self.parent().save_config()
 
     def show(self, tab_index):
@@ -60,6 +70,7 @@ class General(QFrame):
         try:
             self.load_config()
         except Exception as e:
+            print(e)
             QMessageBox.critical(self, "", "Ошибка при загрузке настроек", QMessageBox.Ok)
 
     def _setup_ui(self):
@@ -80,11 +91,15 @@ class General(QFrame):
         self.default_font_size.setMaximum(14)
         self.default_font_size.setFixedWidth(fm.widthChar("0") * 6)
 
+        # UI style
+        self.style_cb = QComboBox()
+
         # Layouts
         form_lay = QFormLayout()
         form_lay.addRow(self.activate_plugin_on_start_cb)
         form_lay.addRow("Размер шрифта по умолчанию", self.default_font_size)
         form_lay.addRow("Название канала устройства по умолчанию", self.default_channel_name)
+        form_lay.addRow("Стиль интерфейса", self.style_cb)
 
         root_lay = QHBoxLayout(self)
         root_lay.addLayout(form_lay)
@@ -102,6 +117,17 @@ class General(QFrame):
         self.default_font_size.setValue(
             self.config.getint(pt.APP_MAIN_SECTION, "default_font_size", fallback=12)
         )
+        # Styles combobox
+        excluded_styles = ['Motif', 'CDE', "Windows"]
+        styles = []
+        for style in QStyleFactory.keys():
+            if style in excluded_styles:
+                continue
+            else:
+                styles.append(style)
+        self.style_cb.addItems(styles)
+        curr_style = self.config.get(pt.APP_MAIN_SECTION, "ui_style", fallback="")
+        self.style_cb.setCurrentIndex(self.style_cb.findText(curr_style))
 
     def set_config(self):
         """Store data into config, no save!"""
@@ -112,7 +138,7 @@ class General(QFrame):
         )
         self.config.set(pt.APP_MAIN_SECTION, "default_channel_name", self.default_channel_name.text())
         self.config.set(pt.APP_MAIN_SECTION, "default_font_size", str(self.default_font_size.value()))
-
+        self.config.set(pt.APP_MAIN_SECTION, "ui_style", self.style_cb.currentText())
 
 
 
@@ -153,6 +179,9 @@ if __name__ == "__main__":
     config = pt.read_config()
 
     app = QApplication([])
+
+    app.setStyle("")
+
     settings = Settings(None, config)
     settings.show(0)
     app.exec_()

@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
             if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
                 self.config.add_section(pt.PLUGINS_CONF_SECTION)
             self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info()["plugin_name"]] = \
-                str(int(plugin.get_info()["activated"]))
+                str(plugin.get_info()["activated"])
         try:
             pt.write_config(self.config)
         except Exception as e:
@@ -193,7 +193,7 @@ class MainWindow(QMainWindow):
         import pt
         if self.config.has_section(pt.PLUGINS_CONF_SECTION):
             for plugin, active_state in self.config[pt.PLUGINS_CONF_SECTION].items():
-                if int(bool(active_state)):
+                if str(active_state).lower() == "true":
                     errors = []
                     for p in self.loaded_plugins:
                         if p.get_info()["plugin_name"] == plugin:
@@ -330,7 +330,10 @@ class PluginSettings(QDialog):
                 self.plugin.activate()
                 self.activate_btn.setIcon(QIcon("./res/on.ico"))
                 self.activate_btn.setText("Деактивировать")
-                print("Activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
+                print(self.plugin.get_info()["plugin_name"],
+                      "activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
+                # Add plugin devices to listview
+                self.plugin.settings.build_dev_list(self.plugin.devices())
             else:
                 # Check if plugin used in this time
                 for p_control in self.parent().plugin_controls:
@@ -346,7 +349,7 @@ class PluginSettings(QDialog):
                 self.plugin.deactivate()
                 self.activate_btn.setIcon(QIcon("./res/off.ico"))
                 self.activate_btn.setText("Активировать")
-                print(self.plugin, "deactivated")
+                print(self.plugin.get_info()["plugin_name"], "deactivated")
             # Rebuild timer controls
             print("Rebuild timer controls")
             self.parent().add_plugin_controls()

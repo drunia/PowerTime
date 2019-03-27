@@ -5,7 +5,7 @@ import os
 import sys
 import configparser
 
-from PySide.QtGui import QApplication, QIcon, QStyleFactory
+from PySide.QtGui import QApplication, QIcon
 
 
 START_DIR = os.getcwd()
@@ -31,26 +31,24 @@ def write_config(c: configparser.ConfigParser, filename=MAIN_CONF_FILE):
     print("Config writen")
 
 
+def set_ui_settings(config):
+    """Set some UI settings (font, style, etc, ...)"""
+    # Style
+    QApplication.setStyle(config.get(APP_MAIN_SECTION, "ui_style", fallback=""))
+    # Font
+    f = QApplication.font()
+    f.setPointSize(config.getint(APP_MAIN_SECTION, "default_font_size", fallback=f.pointSize()))
+    QApplication.setFont(f)
+
+
 if __name__ == "__main__":
     from ui.main import MainWindow
 
     config = read_config(MAIN_CONF_FILE)
-
     app = QApplication(sys.argv)
 
-    for style in QStyleFactory.keys():
-        print(style)
-
-    app.setStyle("Cleanlooks")
-
-
-    # Set default app font size
-    f = app.font()
-    if config.has_option(APP_MAIN_SECTION, "default_font_size"):
-        f.setPointSize(config.getint(APP_MAIN_SECTION, "default_font_size", fallback=12))
-    else:
-        f.setPointSize(12)
-    app.setFont(f)
+    # Set some UI settings
+    set_ui_settings(config)
 
     app.setApplicationName("PowerTime")
     app.setApplicationVersion(VERSION)

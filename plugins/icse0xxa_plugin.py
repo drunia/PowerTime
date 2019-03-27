@@ -17,6 +17,7 @@ class ICSE0XXAPlugin(PTBasePlugin):
         self.__channels = {}
         self.__activated = False
         self.__dev_list = []
+        self.settings = None
 
     def __check_activated(self):
         if not self.__activated:
@@ -80,9 +81,8 @@ class ICSE0XXAPlugin(PTBasePlugin):
         """Return current initialized devices"""
         return self.__dev_list
 
-
     def build_settings(self, widget: QWidget):
-        Settings(self, widget)
+        self.settings = Settings(self, widget)
 
 
 class Settings(QFrame):
@@ -164,18 +164,20 @@ class Settings(QFrame):
         devs = self.plugin.devices()
         self.build_dev_list(devs)
 
-        self.st_lb.setText("Загружено утсройств: {} ".format(len(devs)))
         self.show()
 
     def build_dev_list(self, devs):
         """Create list in QListView from devs[]"""
+        self.qlist_model.clear()
         for d in devs:
             item = QStandardItem(d.name())
             item.setCheckable(True)
             item.setCheckState(Qt.Checked)
+            item.setData(d.id())
             item.setEditable(False)
             item.setIcon(QIcon("./res/icse0xxa_device.ico"))
             self.qlist_model.appendRow(item)
+        self.st_lb.setText("Загружено утсройств: {} ".format(len(devs)))
 
     def qlist_sel_changed(self, item1, item2):
         if item1.row() != item2.row() and item2.row() > 0:
@@ -186,9 +188,8 @@ class Settings(QFrame):
         self.st_lb.setText("Выполняется поиск...")
         QApplication.processEvents()
         devs = find_devices()
-        self.st_lb.setText("Найдено утсройств: {} ".format(len(devs)))
         if len(devs) == 0:
-            self.st_lb.setText("")
+            self.st_lb.setText("Устройств не найдено")
             QMessageBox.warning(
                 self, "Поиск устройств",
                 (
@@ -202,12 +203,9 @@ class Settings(QFrame):
             for d in self.plugin.devices():
                 print("Save active device:", d)
                 devs.append(d)
-        # Add from find_devices()
-        for d in devs:
-            item = QStandardItem(d.name())
-            item.setCheckable(True)
-            item.setIcon(QIcon("./res/icse0xxa_device.ico"))
-            self.qlist_model.appendRow(item)
+        # Build list from find_devices()
+        self.build_dev_list(devs)
+        self.st_lb.setText("Найдено утсройств: {} ".format(len(devs)))
 
     def save_settings(self):
         devs = []
@@ -231,14 +229,14 @@ class Settings(QFrame):
 
     def qlist_item_clicked(self, item: QModelIndex):
         try:
-            dev = self.qlist_model.item(item.row()).data()
+            id = self.qlist_model.item(item.row()).data()
             devs = {
                 0xAB: ["ICSE012A - 4х канальный модуль без дополнительного питания", "icse012A.jpg"],
                 0xAD: ["ICSE013A - 2х канальный модуль без дополнительного питания", "icse013A.jpg"],
                 0xAC: ["ICSE014A - 8х канальный модуль с дополнительным питанием", "icse014A.jpg"]
             }
-            info_text = devs[dev.id()][0]
-            img_name = devs[dev.id()][1]
+            info_text = devs[id][0]
+            img_name = devs[id][1]
             self.info_lb.setText(info_text)
             self.img_lb.setPixmap(QPixmap("./res/" + img_name))
         except Exception as e:

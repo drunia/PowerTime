@@ -681,7 +681,7 @@ class AddDialog(QDialog):
         self.res_lb = QLabel()
         self.res_lb.setFont(f)
 
-        subh_lay = QHBoxLayout(self)
+        subh_lay = QHBoxLayout()
         subh_lay.addWidget(self.res_lb, alignment=Qt.AlignLeft)
         subh_lay.addWidget(self.add_btn, alignment=Qt.AlignRight)
         vbox_lay.addLayout(subh_lay)
@@ -824,7 +824,8 @@ class AddDialog(QDialog):
             self.time = round(float(self.inputted_value) / self.parent().price * 3600)
             if self.time < self.min_add_time:
                 QMessageBox.warning(self, "Добавить деньги",
-                                    "Минимальная сумма для добавления: " + str(round(self.parent().price / 60 * 5, 2)))
+                                    "Минимальная сумма для добавления: " + str(
+                                        round(self.parent().price / 60 * 5, 2)) + " грн.")
                 return
         else:
             self.time = self.inputted_value

@@ -5,9 +5,9 @@ setup(
     version='1.0.0',
     packages=['ui', 'res', 'devices', 'plugins'],
     url='',
-    license='',
+    license='LGPL',
     author='drunia',
     author_email='druniax@gmail.com',
-    description='Power by time management client',
+    description='Power management util',
     install_requires=['serial', 'PySide']
 )
