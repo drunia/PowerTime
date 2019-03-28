@@ -24,9 +24,11 @@ class ICSE0XXADevice:
     RELAYS = {0xAB: 4, 0xAD: 2, 0xAC: 8}
 
     def __init__(self, port, id):
-        """Create ICSE0XXADevice object
+        """
+        Create ICSE0XXADevice object
         :arg port  Device port
-        :arg id  Device id"""
+        :arg id  Device id
+        """
 
         super().__init__()
 
@@ -67,11 +69,13 @@ class ICSE0XXADevice:
             return "Unknown_Device@{}".format(self.port())
 
     def switch_relay(self, relay_num, enable):
-        """Switching relay on device
+        """
+        Switching relay on device
         :arg relay_num  Number of relay
         :arg enable Switch state True - ON, False - OFF
         NOTICE:
-        ON - diode on PCB is off, OFF - diodes lights!"""
+        ON - diode on PCB is off, OFF - diodes lights!
+        """
         self.__chek_init()
         if relay_num >= self.relays_count():
             raise Exception("Relay num mast be less than {}".format(ICSE0XXADevice.RELAYS[self.__id]))
@@ -83,11 +87,13 @@ class ICSE0XXADevice:
         self.__connection.write(bytes([self.__relays_register]))
 
     def init_device(self):
-        """Turn device to listening mode
+        """
+        Turn device to listening mode
         NOTICE:
         In listening mode device not responding for identification
         For disable listening mode need turn off or reset device!
-        :except SerialTimeoutException, SerialException"""
+        :except SerialTimeoutException, SerialException
+        """
         self.__initialized = False
         self.__connection = Serial()
         self.__connection.port = self.__port
@@ -122,59 +128,63 @@ class ICSE0XXADevice:
     def __str__(self):
         return self.name()
 
-
-def load_devices_from_config(file="icse0xxa.conf"):
-    """Load ICSE0XXA devices from config file
-    :return: dev_list[ICSE0XXADevice, ...]
-    Returned objects device not initialized!"""
-    dev_list = []
-    c = ConfigParser()
-    c.optionxform = str
-    c.read(file)
-    if ICSE0XXADevice.MAIN_CFG_SECTION not in c.sections():
+    @staticmethod
+    def load_devices_from_config(file="icse0xxa.conf"):
+        """
+        Load ICSE0XXA devices from config file
+        :return: dev_list[ICSE0XXADevice, ...]
+        Returned objects device not initialized!
+        """
+        dev_list = []
+        c = ConfigParser()
+        c.optionxform = str
+        c.read(file)
+        if ICSE0XXADevice.MAIN_CFG_SECTION not in c.sections():
+            return dev_list
+        for k in c[ICSE0XXADevice.MAIN_CFG_SECTION]:
+            dev_list.append(ICSE0XXADevice(k, int(c[ICSE0XXADevice.MAIN_CFG_SECTION][k], 16)))
         return dev_list
-    for k in c[ICSE0XXADevice.MAIN_CFG_SECTION]:
-        dev_list.append(ICSE0XXADevice(k, int(c[ICSE0XXADevice.MAIN_CFG_SECTION][k], 16)))
-    return dev_list
 
+    @staticmethod
+    def save_devices_to_config(dev_list, file="icse0xxa.conf"):
+        c = ConfigParser()
+        c.optionxform = str
+        c.read(file)
+        c[ICSE0XXADevice.MAIN_CFG_SECTION] = {}
+        for d in dev_list:
+            c[ICSE0XXADevice.MAIN_CFG_SECTION][d.port()] = hex(d.id())
+        with open(file, "w") as f:
+            c.write(f)
 
-def save_devices_to_config(dev_list, file="icse0xxa.conf"):
-    c = ConfigParser()
-    c.optionxform = str
-    c.read(file)
-    c[ICSE0XXADevice.MAIN_CFG_SECTION] = {}
-    for d in dev_list:
-        c[ICSE0XXADevice.MAIN_CFG_SECTION][d.port()] = hex(d.id())
-    with open(file, "w") as f:
-        c.write(f)
-
-
-def find_devices():
-    """Find ICSE0XXA devices on ports
-    :return: dev_list[ICSE0XXADevice, ...]
-    Returned objects device not initialized!"""
-    dev_list = []
-    for port in list_ports.comports():
-        p = Serial()
-        p.port = port.device
-        p.timeout = 1
-        try:
-            p.open()
-        except SerialException as e:
-            icse0xxa_eprint("find_devices(): {}".format(e))
-            continue
-        try:
-            time.sleep(0.5)
-            p.write(ICSE0XXADevice.ID_COMMAND)
-            time.sleep(0.5)
-            answer = p.read(1)
-            if (len(answer) > 0) and (answer[0] in ICSE0XXADevice.MODELS):
-                dev_list.append(ICSE0XXADevice(p.port, answer[0]))
-        except SerialTimeoutException as e:
-            icse0xxa_eprint("find_devices(): {}".format(e))
-        finally:
-            p.close()
-    return dev_list
+    @staticmethod
+    def find_devices():
+        """
+        Find ICSE0XXA devices on ports
+        :return: dev_list[ICSE0XXADevice, ...]
+        Returned objects device not initialized!
+        """
+        dev_list = []
+        for port in list_ports.comports():
+            p = Serial()
+            p.port = port.device
+            p.timeout = 1
+            try:
+                p.open()
+            except SerialException as e:
+                icse0xxa_eprint("find_devices(): {}".format(e))
+                continue
+            try:
+                time.sleep(0.5)
+                p.write(ICSE0XXADevice.ID_COMMAND)
+                time.sleep(0.5)
+                answer = p.read(1)
+                if (len(answer) > 0) and (answer[0] in ICSE0XXADevice.MODELS):
+                    dev_list.append(ICSE0XXADevice(p.port, answer[0]))
+            except SerialTimeoutException as e:
+                icse0xxa_eprint("find_devices(): {}".format(e))
+            finally:
+                p.close()
+        return dev_list
 
 
 def icse0xxa_eprint(err):
@@ -182,10 +192,10 @@ def icse0xxa_eprint(err):
 
 
 def test():
-    dev_list = load_devices_from_config()
+    dev_list = ICSE0XXADevice.load_devices_from_config()
     if len(dev_list) == 0:
         print("No devices in config file, try autosearch device on serial ports")
-        dev_list = find_devices()
+        dev_list = ICSE0XXADevice.find_devices()
 
         if len(dev_list) == 0:
             print("No device(s) finded on serial ports. " 
@@ -193,7 +203,7 @@ def test():
             sys.exit(1)
         else:
             # Save devices in config
-            save_devices_to_config(dev_list)
+            ICSE0XXADevice.save_devices_to_config(dev_list)
             print("Finded {} device(s)".format(len(dev_list)))
     else:
         print("Loaded {} device(s)".format(len(dev_list)))

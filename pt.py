@@ -56,21 +56,4 @@ if __name__ == "__main__":
 
     mw = MainWindow(config)
 
-    # Usb device plug-in/plug-out notify
-    port_notification = None
-    if os.name == "nt":
-        import devices.icsex00a_port_state_notificator_win
-
-        port_notification = devices.icsex00a_port_state_notificator_win.PortStateNotificator()
-    elif os.name == "linux":
-        import devices.icsex00a_port_state_notificator_linux
-
-    # Called when ports (Serial/Parallel/etc...) connected or disconnected
-    def port_state_changed(port, state):
-        print("Port [{}] connected state changed to: {}".format(port, state))
-
-    if port_notification:
-        print("port_notification created")
-        port_notification.state_changed.connect(port_state_changed)
-
     sys.exit(app.exec_())

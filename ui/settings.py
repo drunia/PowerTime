@@ -76,7 +76,7 @@ class General(QFrame):
     def _setup_ui(self):
         fm = self.fontMetrics()
 
-        self.activate_plugin_on_start_cb = QCheckBox("Активировать загруженные плагины при старте", self)
+        self.activate_plugin_on_start_cb = QCheckBox("Активировать активированые ранее плагины при старте", self)
 
         # Default channel name
         self.default_channel_name = QLineEdit()

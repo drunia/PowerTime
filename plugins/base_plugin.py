@@ -2,7 +2,6 @@
 #-*- coding: utf-8 -*-
 
 from abc import ABCMeta, abstractmethod
-from PySide.QtGui import QWidget
 
 
 class SwitchException(Exception):
@@ -83,16 +82,18 @@ class PTBasePlugin(metaclass=ABCMeta):
     def deactivate(self):
         """
         Deactivating plugin
-        Method deactivate plugin
+        Method deactivating plugin
         :raises Exception
         """
 
     @abstractmethod
-    def build_settings(self, widget: QWidget):
+    def build_settings(self, parent_widget):
         """Build plugin setting ui on plugin page
-
+        :param parent_widget - parent UI object - window where be placed ui_widget if needed
         :raises Exception
+        :return ui_widget - UI object instance object of PyQt, PyGTK, Tkinter or others GUI libs
         """
-        pass
+        ui_widget = None
+        return ui_widget
 
 

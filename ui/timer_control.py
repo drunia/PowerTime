@@ -106,13 +106,13 @@ class TimerCashControl(QFrame):
         # Test timeout signal
         self.switched.connect(
             lambda *x:
-            print("Switch signal:", x)
+            print("Switch signal:", "channel =", x[0].channel, "state =", x[1])
         )
 
         # Test change signal
         self.changed.connect(
             lambda *x:
-            print("Change signal:", x)
+            print("Change signal:", "channel =", x[0].channel, "state =", x[1])
         )
 
     def _init_ui(self):
@@ -124,7 +124,7 @@ class TimerCashControl(QFrame):
         # Title (Number of channel)
         self.tittle_lb = QLabel()
         f = self.tittle_lb.font()
-        f.setPointSize(20)
+        f.setPointSize(16)
         self.tittle_lb.setFont(f)
         self.tittle_lb.setAlignment(Qt.AlignLeft)
 
@@ -372,6 +372,10 @@ class TimerCashControl(QFrame):
     # Paint cash icon in QLCDNumber
     def _cash_paint_event(self, evt: QPaintEvent):
         p = QPainter(self.cash_display)
+        # Fixed font size
+        f = p.font()
+        f.setPointSize(10)
+        p.setFont(f)
         w, h = 0, self.cash_display.height() - (p.fontMetrics().height() / 2)
         p.drawText((p.fontMetrics().height() / 2), h, "Деньги")
 
@@ -392,6 +396,10 @@ class TimerCashControl(QFrame):
     # Paint clock icon in QLCDNumber
     def _time_paint_event(self, evt: QPaintEvent):
         p = QPainter(self.time_display)
+        # Fixed font size
+        f = p.font()
+        f.setPointSize(10)
+        p.setFont(f)
         p.setRenderHints(p.renderHints() | QPainter.Antialiasing)
         w, h = 0, self.time_display.height() - (p.fontMetrics().height() / 2)
         p.drawText((p.fontMetrics().height() / 2), h, "Время")

@@ -9,5 +9,5 @@ setup(
     author='drunia',
     author_email='druniax@gmail.com',
     description='Power management util',
-    install_requires=['serial', 'PySide']
+    install_requires=['serial', 'PySide', 'pyudev']
 )

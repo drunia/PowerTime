@@ -140,11 +140,15 @@ class MainWindow(QMainWindow):
             self.config[pt.APP_MAIN_SECTION]["height"] = str(self.height())
             self.config[pt.APP_MAIN_SECTION]["width"] = str(self.width())
         # Plugins
-        for plugin in self.loaded_plugins:
-            if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
-                self.config.add_section(pt.PLUGINS_CONF_SECTION)
-            self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info()["plugin_name"]] = \
-                str(plugin.get_info()["activated"])
+        if self.config.has_section(pt.APP_MAIN_SECTION) and \
+                self.config.getboolean(pt.APP_MAIN_SECTION, "activate_plugin_on_start", fallback=False):
+            for plugin in self.loaded_plugins:
+                if not plugin.get_info()["activated"]:
+                    continue
+                if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
+                    self.config.add_section(pt.PLUGINS_CONF_SECTION)
+                self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info()["plugin_name"]] = \
+                    str(plugin.get_info()["activated"])
         try:
             pt.write_config(self.config)
         except Exception as e:
@@ -288,10 +292,9 @@ class PluginSettings(QDialog):
         self.setWindowTitle(self.plugin.get_info()["plugin_name"])
         self.setMaximumSize(800, 600)
 
-        plugin_frame = QFrame()
-        plugin_frame.setMinimumSize(400, 200)
-
         # Integrate plugin settings
+        plugin_frame = QFrame()
+        plugin_frame.setMinimumSize(320, 240)
         self.plugin.build_settings(plugin_frame)
 
         self.activate_btn.setFixedSize(180, 30)
@@ -328,8 +331,9 @@ class PluginSettings(QDialog):
 
     def activate_plugin(self):
         try:
-            self.plugin
             if not self.plugin.get_info()["activated"]:
+                if not self.plugin.devices():
+                    self.plugin.load_devs_from_config()
                 self.plugin.activate()
                 self.activate_btn.setIcon(QIcon("./res/on.ico"))
                 self.activate_btn.setText("Деактивировать")
