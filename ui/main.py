@@ -347,7 +347,7 @@ class PluginSettings(QDialog):
                     if not p_control.stopped:
                         if QMessageBox.warning(
                                 self, "Внимание!",
-                                "В данный момент плагина находится в использовании.\n"
+                                "В данный момент плагин находится в использовании.\n"
                                 "Деактивация плагина приведет к утрате результатов работы\n"
                                 "Все равно продолжить ?",
                                 QMessageBox.Yes | QMessageBox.No

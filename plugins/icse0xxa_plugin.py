@@ -38,6 +38,10 @@ class ICSE0XXAPlugin(PTBasePlugin):
         self.settings = None
         self.__dev_list = self.load_devs_from_config()
 
+    def set_devices(self, devs):
+        """Set devices from dev list"""
+        self.__dev_list = devs
+
     def load_devs_from_config(self):
         """
         Loading devices from config file
@@ -236,6 +240,7 @@ class Settings(QFrame):
 
         # Build list from find_devices()
         self.build_dev_list(devs)
+        self.plugin.set_devices(devs)
 
     def save_settings(self):
         devs = self.plugin.devices()
