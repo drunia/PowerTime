@@ -142,12 +142,15 @@ class General(QFrame):
         self.config.set(pt.APP_MAIN_SECTION, "ui_style", self.style_cb.currentText())
 
 
-
 class Tariffication(QFrame):
     """Tariffication tab settings"""
     def __init__(self, config):
         super().__init__()
         self.config = config
+
+    def _setup_ui(self):
+        # Tariffication gui
+        pass
 
     def load_config(self):
         """Load config data into form for edit"""
