@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 #-*- coding: utf-8 -*-
 
-from abc import ABCMeta, abstractmethod, abstractproperty
-from PyQt5.QtWidgets import QWidget
+from abc import ABCMeta, abstractmethod
 
 
 class SwitchException(Exception):
     """Exception raises on problem in switch"""
     pass
 
+
 class ActivateException(Exception):
     """Exception raises with non activated plugin state"""
     pass
 
+
 class NoDevicesException(Exception):
     """An exception occurs when no one device finded or loaded from config"""
     pass
-
 
 
 class PTBasePlugin(metaclass=ABCMeta):
@@ -82,16 +82,18 @@ class PTBasePlugin(metaclass=ABCMeta):
     def deactivate(self):
         """
         Deactivating plugin
-        Method deactivate plugin
+        Method deactivating plugin
         :raises Exception
         """
 
     @abstractmethod
-    def build_settings(self, widget: QWidget):
+    def build_settings(self, parent_widget):
         """Build plugin setting ui on plugin page
-
+        :param parent_widget - parent UI object - window where be placed ui_widget if needed
         :raises Exception
+        :return ui_widget - UI object instance object of PyQt, PyGTK, Tkinter or others GUI libs
         """
-        pass
+        ui_widget = None
+        return ui_widget
 
 

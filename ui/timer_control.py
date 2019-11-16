@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from builtins import print
+import datetime
+import enum
+import pt
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QPoint, QRect
-from PyQt5.QtGui import QFont, QPaintEvent, QPainter, QPixmap, QPalette, QColor, QPen
-from PyQt5.QtWidgets import *
 from configparser import ConfigParser
-import datetime, enum, pt
-
-from PyQt5.QtWidgets import QVBoxLayout
+from PySide.QtCore import Qt, QTimer, Signal
+from PySide.QtGui import (QPaintEvent, QPainter, QPixmap, QPalette, QColor, QLabel, QFrame,
+                          QLCDNumber, QComboBox, QPushButton, QVBoxLayout, QHBoxLayout, QMessageBox, QToolTip,
+                          QApplication, QWidget, QDialog)
 
 
 class ControlMode(enum.Enum):
@@ -37,16 +37,16 @@ class TimerCashControl(QFrame):
     :param object - instance of TimerCashControl
     :param bool - switch state
     """
-    switched = pyqtSignal(object, bool)
+    switched = Signal(object, bool)
 
     """
     Change signal - Changed when time or cash added (from AddDialog())
     :param int - old time value
     :param int - new time value
     """
-    changed = pyqtSignal(int, int)
+    changed = Signal(int, int)
 
-    def __init__(self, parent: QWidget, num_channel: int):
+    def __init__(self, parent, num_channel: int):
         """
         Create control UI by channel
         :param parent: Parent component
@@ -83,7 +83,7 @@ class TimerCashControl(QFrame):
         self.time_repaint_mode = datetime.datetime.now().second
 
         # Tariffs
-        self.config: ConfigParser = self.parent().config
+        self.config = self.parent().config
         if self.config.has_section(pt.TARIFFS_CONF_SECTION):
             self.tariffs = self.config[pt.TARIFFS_CONF_SECTION]
         else:
@@ -92,7 +92,7 @@ class TimerCashControl(QFrame):
         # Timer
         self.timer = QTimer()
         self.timer.timerEvent = self._timer_event
-        self.timer_id = self.timer.startTimer(100, Qt.PreciseTimer)
+        self.timer_id = self.timer.start(100)
 
         # Icons
         self.cash_pixmap = QPixmap("./res/cash.png")
@@ -106,13 +106,13 @@ class TimerCashControl(QFrame):
         # Test timeout signal
         self.switched.connect(
             lambda *x:
-            print("Switch signal:", x)
+            print("Switch signal:", "channel =", x[0].channel, "state =", x[1])
         )
 
         # Test change signal
         self.changed.connect(
             lambda *x:
-            print("Change signal:", x)
+            print("Change signal:", "channel =", x[0].channel, "state =", x[1])
         )
 
     def _init_ui(self):
@@ -123,8 +123,8 @@ class TimerCashControl(QFrame):
 
         # Title (Number of channel)
         self.tittle_lb = QLabel()
-        f: QFont = self.tittle_lb.font()
-        f.setPointSize(20)
+        f = self.tittle_lb.font()
+        f.setPointSize(16)
         self.tittle_lb.setFont(f)
         self.tittle_lb.setAlignment(Qt.AlignLeft)
 
@@ -138,7 +138,7 @@ class TimerCashControl(QFrame):
         self.time_display.setCursor(Qt.IBeamCursor)
 
         # set background color
-        p: QPalette = self.time_display.palette()
+        p = self.time_display.palette()
         p.setColor(QPalette.Background, QColor(204, 204, 204))
         self.time_display.setPalette(p)
 
@@ -172,7 +172,7 @@ class TimerCashControl(QFrame):
         self.cash_display.mousePressEvent = self._cash_mouse_pressed
 
         # Get default display background color
-        p: QPalette = self.cash_display.palette()
+        p = self.cash_display.palette()
         self.default_background_display_color = p.color(QPalette.Background)
 
         # Tariffs combobox
@@ -222,7 +222,7 @@ class TimerCashControl(QFrame):
         root_lay.addWidget(self.cash_display, stretch=1)
 
         # Controls layout
-        controls_lay = QHBoxLayout(self)
+        controls_lay = QHBoxLayout()
         controls_lay.addWidget(self.start_btn)
         controls_lay.addWidget(self.stop_btn)
         controls_lay.setContentsMargins(0, 10, 0, 5)
@@ -232,7 +232,7 @@ class TimerCashControl(QFrame):
     # Set price by tariff
     def change_tariff_cb(self, index):
         print("Channel:", self.channel, "tariff changed to:", self.tariff_cb.currentText())
-        self.price = self.tariff_cb.currentData()
+        self.price = self.tariff_cb.itemData(index, Qt.UserRole)
         # Check admin tariff
         if self.price == 0:
             self.time_display.setFocusPolicy(Qt.NoFocus)
@@ -290,7 +290,7 @@ class TimerCashControl(QFrame):
 
     # Set control tittle
     def set_control_tittle(self, tittle="Канал "):
-        self.tittle_lb.setText(tittle + str(self.channel + 1))
+        self.tittle_lb.setText(tittle + " " + str(self.channel + 1))
 
     # Display time & cash
     def display(self):
@@ -371,7 +371,11 @@ class TimerCashControl(QFrame):
 
     # Paint cash icon in QLCDNumber
     def _cash_paint_event(self, evt: QPaintEvent):
-        p: QPainter = QPainter(self.cash_display)
+        p = QPainter(self.cash_display)
+        # Fixed font size
+        f = p.font()
+        f.setPointSize(10)
+        p.setFont(f)
         w, h = 0, self.cash_display.height() - (p.fontMetrics().height() / 2)
         p.drawText((p.fontMetrics().height() / 2), h, "Деньги")
 
@@ -391,7 +395,11 @@ class TimerCashControl(QFrame):
 
     # Paint clock icon in QLCDNumber
     def _time_paint_event(self, evt: QPaintEvent):
-        p: QPainter = QPainter(self.time_display)
+        p = QPainter(self.time_display)
+        # Fixed font size
+        f = p.font()
+        f.setPointSize(10)
+        p.setFont(f)
         p.setRenderHints(p.renderHints() | QPainter.Antialiasing)
         w, h = 0, self.time_display.height() - (p.fontMetrics().height() / 2)
         p.drawText((p.fontMetrics().height() / 2), h, "Время")
@@ -415,7 +423,7 @@ class TimerCashControl(QFrame):
                 pos_num = 2
             if self.edit_time_mode == EditTimeMode.MINUTES:
                 pos_num = 5
-            pen: QPen = p.pen()
+            pen = p.pen()
             pen.setWidth(2)
             pen.setCapStyle(Qt.FlatCap)
             pen.setJoinStyle(Qt.RoundJoin)
@@ -433,7 +441,7 @@ class TimerCashControl(QFrame):
 
     # Cash display get focus
     def _cash_focus_in(self, evt):
-        palette: QPalette = self.cash_display.palette()
+        palette = self.cash_display.palette()
         palette.setColor(QPalette.Background, QColor(255, 255, 255))
         self.cash_display.setPalette(palette)
         try:
@@ -450,7 +458,7 @@ class TimerCashControl(QFrame):
 
     # Cash display lost focus
     def _cash_focus_out(self, evt):
-        pallete: QPalette = self.cash_display.palette()
+        pallete = self.cash_display.palette()
         pallete.setColor(QPalette.Background, self.default_background_display_color)
         self.cash_display.setPalette(pallete)
 
@@ -517,7 +525,7 @@ class TimerCashControl(QFrame):
 
     # Time display get focus
     def _time_focus_in(self, evt):
-        pallete: QPalette = self.time_display.palette()
+        pallete = self.time_display.palette()
         pallete.setColor(QPalette.Background, QColor(255, 255, 255))
         self.time_display.setPalette(pallete)
         self.edit_time_mode = EditTimeMode.HOURS
@@ -527,7 +535,7 @@ class TimerCashControl(QFrame):
 
     # Time display lost focus
     def _time_focus_out(self, evt):
-        palette: QPalette = self.time_display.palette()
+        palette = self.time_display.palette()
         palette.setColor(QPalette.Background, self.default_background_display_color)
         self.time_display.setPalette(palette)
         self.edit_time_mode = EditTimeMode.NO_EDIT
@@ -673,7 +681,7 @@ class AddDialog(QDialog):
         self.input_lcd.keyPressEvent = self._input_key_press
 
         self.title_lb = QLabel()
-        f: QFont = self.title_lb.font()
+        f = self.title_lb.font()
         f.setPointSize(16)
         self.title_lb.setFont(f)
         self.title_lb.setWordWrap(True)
@@ -681,7 +689,7 @@ class AddDialog(QDialog):
         self.res_lb = QLabel()
         self.res_lb.setFont(f)
 
-        subh_lay = QHBoxLayout(self)
+        subh_lay = QHBoxLayout()
         subh_lay.addWidget(self.res_lb, alignment=Qt.AlignLeft)
         subh_lay.addWidget(self.add_btn, alignment=Qt.AlignRight)
         vbox_lay.addLayout(subh_lay)
@@ -804,7 +812,7 @@ class AddDialog(QDialog):
         p = QPainter(self.input_lcd)
         p.setRenderHints(p.renderHints() | QPainter.Antialiasing)
         p.drawPixmap(10, (self.input_lcd.height() - self.icon.height()) // 2, self.icon)
-        pen: QPen = p.pen()
+        pen = p.pen()
         pen.setWidth = 2
         pen.setCapStyle(Qt.RoundCap)
 
@@ -824,7 +832,8 @@ class AddDialog(QDialog):
             self.time = round(float(self.inputted_value) / self.parent().price * 3600)
             if self.time < self.min_add_time:
                 QMessageBox.warning(self, "Добавить деньги",
-                                    "Минимальная сумма для добавления: " + str(round(self.parent().price / 60 * 5, 2)))
+                                    "Минимальная сумма для добавления: " + str(
+                                        round(self.parent().price / 60 * 5, 2)) + " грн.")
                 return
         else:
             self.time = self.inputted_value
@@ -848,4 +857,4 @@ if __name__ == "__main__":
     mw.config = pt.read_config()
     w = TimerCashControl(mw, 1)
     mw.show()
-    app.exec()
+    app.exec_()

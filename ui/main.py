@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import QSize, Qt
-from configparser import ConfigParser
-from plugins.icse0xxa_plugin import PTBasePlugin
-from ui.timer_control import *
-from ui.settings import Settings
 import os
 
+from PySide.QtGui import *
+from PySide.QtCore import Qt, QSize
+from ui.timer_control import *
+from ui.settings import Settings
 
 
 class MainWindow(QMainWindow):
@@ -27,18 +24,31 @@ class MainWindow(QMainWindow):
         self._load_plugins()
 
         self._setup_ui()
-        self._activate_plugins_on_start()
-        self.add_plugin_controls()
+
+        if config.has_section(pt.APP_MAIN_SECTION):
+            if config.getboolean(pt.APP_MAIN_SECTION, "activate_plugin_on_start", fallback=False):
+                self._activate_plugins_on_start()
+                self.add_plugin_controls()
 
     def _setup_ui(self):
         self.setWindowTitle("PowerTime")
-        self.resize(800, 600)
+        # Size from config
+        if self.config.has_section(pt.APP_MAIN_SECTION):
+            width, height = 1024, 768
+            try:
+                width = self.config.getint(pt.APP_MAIN_SECTION, "width", fallback=1024)
+                height = self.config.getint(pt.APP_MAIN_SECTION, "height", fallback=768)
+            except ValueError:
+                pass
+            self.resize(width, height)
+            if self.config.getboolean(pt.APP_MAIN_SECTION, "maximized", fallback=False):
+                self.showMaximized()
+        else:
+            # Default: show maximized
+            self.showMaximized()
 
         # Main menu
-        menubar: QMenuBar = self.menuBar()
-        menufont: QFont = menubar.font()
-        menufont.setPointSize(13)
-        menubar.setFont(menufont)
+        menubar = self.menuBar()
         menubar.setMinimumHeight(40)
 
         # Settings menu
@@ -64,8 +74,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.scroll_area)
 
         # Statusbar
-        self.statusBar().setFont(menubar.font())
-        self.statusBar().showMessage("Вeрсия: " + qApp.applicationVersion())
+        self.statusBar().showMessage("Вeрсия: " + QApplication.applicationVersion())
         self.statusBar()
 
         self.show()
@@ -102,11 +111,13 @@ class MainWindow(QMainWindow):
                 plugin_info = ch_info[2].get_info()["plugin_name"] + \
                               " - " + str(ch_info[0]) + " - channel: " + str(ch_info[1])
                 control.tittle_lb.setToolTip(plugin_info)
+                if self.config.has_option(pt.APP_MAIN_SECTION, "default_channel_name"):
+                    control.set_control_tittle(self.config.get(pt.APP_MAIN_SECTION, "default_channel_name"))
         self.scroll_area.setWidget(self.control_frame)
 
     def switch_event(self, control, state: bool):
         try:
-            plugin: PTBasePlugin = self.loaded_plugins[0]
+            plugin = self.loaded_plugins[0]
             plugin.switch(control.channel, state)
         except Exception as e:
             print(e)
@@ -125,14 +136,19 @@ class MainWindow(QMainWindow):
         if not self.config.has_section(pt.APP_MAIN_SECTION):
             self.config.add_section(pt.APP_MAIN_SECTION)
         self.config[pt.APP_MAIN_SECTION]["maximized"] = str(int(self.isMaximized()))
-        self.config[pt.APP_MAIN_SECTION]["height"] = str(self.height())
-        self.config[pt.APP_MAIN_SECTION]["width"] = str(self.width())
+        if not self.isMaximized():
+            self.config[pt.APP_MAIN_SECTION]["height"] = str(self.height())
+            self.config[pt.APP_MAIN_SECTION]["width"] = str(self.width())
         # Plugins
-        for plugin in self.loaded_plugins:
-            if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
-                self.config.add_section(pt.PLUGINS_CONF_SECTION)
-            self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info()["plugin_name"]] = \
-                str(int(plugin.get_info()["activated"]))
+        if self.config.has_section(pt.APP_MAIN_SECTION) and \
+                self.config.getboolean(pt.APP_MAIN_SECTION, "activate_plugin_on_start", fallback=False):
+            for plugin in self.loaded_plugins:
+                if not plugin.get_info()["activated"]:
+                    continue
+                if not self.config.has_section(pt.PLUGINS_CONF_SECTION):
+                    self.config.add_section(pt.PLUGINS_CONF_SECTION)
+                self.config[pt.PLUGINS_CONF_SECTION][plugin.get_info()["plugin_name"]] = \
+                    str(plugin.get_info()["activated"])
         try:
             pt.write_config(self.config)
         except Exception as e:
@@ -145,7 +161,7 @@ class MainWindow(QMainWindow):
 
     def devices_menu_show(self):
         for action in self.menu_devices.actions():
-            plugin: PTBasePlugin = action.data()
+            plugin = action.data()
             if plugin.get_info()["activated"]:
                 action.setIcon(QIcon("./res/on.ico"))
             else:
@@ -154,21 +170,23 @@ class MainWindow(QMainWindow):
     def find_plugins(self, plugins_dir="./plugins"):
         """Search device-plugins in modules dir
         :return list[Plugin_Class...,]"""
-        import pkgutil, inspect
+        import pkgutil
+        import inspect
         plugins = []
         # Find modules with classes inherited from PTBasePlugin
         mod_info_list = list(pkgutil.iter_modules([plugins_dir]))
         for module in mod_info_list:
-            m = __import__("plugins." + module.name, fromlist=['object'])
-            clslist = inspect.getmembers(m, inspect.isclass)
-            for cls in clslist:
+            m = __import__("plugins." + module[1], fromlist=['object'])
+            classlist = inspect.getmembers(m, inspect.isclass)
+            for cls in classlist:
                 bases = cls[1].__mro__
                 for b in bases:
                     if b.__name__ == "PTBasePlugin" and not cls[1].__name__ == "PTBasePlugin":
                         print("{}(): Plugin class finded: {}".format(inspect.stack()[0][3], cls[1].__name__))
                         plugins.append(cls[1])
                         break
-        del pkgutil, inspect
+        del pkgutil
+        del inspect
         print("find_plugins():", len(plugins))
         return plugins
 
@@ -182,14 +200,13 @@ class MainWindow(QMainWindow):
         import pt
         if self.config.has_section(pt.PLUGINS_CONF_SECTION):
             for plugin, active_state in self.config[pt.PLUGINS_CONF_SECTION].items():
-                if int(bool(active_state)):
+                if str(active_state).lower() == "true":
                     errors = []
                     for p in self.loaded_plugins:
                         if p.get_info()["plugin_name"] == plugin:
                             try:
                                 print("_activate_plugins_on_start():", plugin)
                                 p.activate()
-                                #p._ICSE0XXAPlugin__activated = True
                             except Exception as e:
                                 errors.append(e)
                     # Show errors
@@ -211,7 +228,6 @@ class MainWindow(QMainWindow):
         for plugin in self.loaded_plugins:
             pname = plugin.get_info()["plugin_name"]
             action = QAction(pname, self)
-            action.setFont(self.menuBar().font())
             action.setCheckable(True)
             action.setChecked(True)
             action.setData(plugin)  # Set reference to us plugin into menu
@@ -226,8 +242,8 @@ class MainWindow(QMainWindow):
         when menu Settings clicked first time
         """
         if not self.settings:
-            print("Settings created")
             self.settings = Settings(self, self.config)
+            print("Settings created")
 
         self.menu_settings.clear()
         self.menu_settings.addActions(self._build_settings_actions())
@@ -238,22 +254,21 @@ class MainWindow(QMainWindow):
         :return list[QAction,...]
         """
         actions = []
-        for item in self.settings.tab_names.keys():
-            action = QAction(item, self)
-            action.setFont(self.menuBar().font())
-            action.setStatusTip("Открыть настройки: " + item)
+        for item in self.settings.tab_names:
+            action = QAction(item[0], self)
+            action.setStatusTip("Открыть настройки: " + item[0])
             action.setData(len(actions))
             action.triggered.connect(self.menu_open_settings_tab)
             actions.append(action)
         return actions
 
     def menu_open_settings_tab(self):
-        index = qApp.sender().data()
+        index = QApplication.sender(self).data()
         self.settings.show(index)
 
     def mclick(self):
         """ Mouse click from devices menu """
-        plugin = qApp.sender().data()
+        plugin = QApplication.sender(self).data()
         try:
             psettings = PluginSettings(self, plugin)
             psettings.show()
@@ -277,11 +292,12 @@ class PluginSettings(QDialog):
         self.setWindowTitle(self.plugin.get_info()["plugin_name"])
         self.setMaximumSize(800, 600)
 
+        # Integrate plugin settings
         plugin_frame = QFrame()
-        plugin_frame.setMinimumSize(400, 200)
+        plugin_frame.setMinimumSize(320, 240)
         self.plugin.build_settings(plugin_frame)
 
-        self.activate_btn.setFixedSize(150, 30)
+        self.activate_btn.setFixedSize(180, 30)
         self.activate_btn.setCheckable(True)
         if self.plugin.get_info()["activated"]:
             self.activate_btn.setIcon(QIcon("./res/on.ico"))
@@ -293,7 +309,7 @@ class PluginSettings(QDialog):
         self.activate_btn.clicked.connect(self.activate_plugin)
 
         self.plugin_info_lb.setWordWrap(True)
-        self.plugin_info_lb.setFixedWidth(plugin_frame.width() - 150)
+        self.plugin_info_lb.setFixedWidth(plugin_frame.width() - 180)
         self.plugin_info_lb.setText(
             "<b>{}</b> - {} <br>Автор: <b>{}</b>, Версия: <b>{}</b>".format(
                 self.plugin.get_info()["plugin_name"],
@@ -315,17 +331,32 @@ class PluginSettings(QDialog):
 
     def activate_plugin(self):
         try:
-            self.plugin: PTBasePlugin
             if not self.plugin.get_info()["activated"]:
+                if not self.plugin.devices():
+                    self.plugin.load_devs_from_config()
                 self.plugin.activate()
                 self.activate_btn.setIcon(QIcon("./res/on.ico"))
                 self.activate_btn.setText("Деактивировать")
-                print("Activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
+                print(self.plugin.get_info()["plugin_name"],
+                      "activate successfully, plugin with ", self.plugin.get_channels_count(), "relays")
+                # Add plugin devices to listview
+                self.plugin.settings.build_dev_list(self.plugin.devices())
             else:
+                # Check if plugin used in this time
+                for p_control in self.parent().plugin_controls:
+                    if not p_control.stopped:
+                        if QMessageBox.warning(
+                                self, "Внимание!",
+                                "В данный момент плагин находится в использовании.\n"
+                                "Деактивация плагина приведет к утрате результатов работы\n"
+                                "Все равно продолжить ?",
+                                QMessageBox.Yes | QMessageBox.No
+                                ) == QMessageBox.No:
+                            return
                 self.plugin.deactivate()
                 self.activate_btn.setIcon(QIcon("./res/off.ico"))
                 self.activate_btn.setText("Активировать")
-                print(self.plugin, "deactivated")
+                print(self.plugin.get_info()["plugin_name"], "deactivated")
             # Rebuild timer controls
             print("Rebuild timer controls")
             self.parent().add_plugin_controls()
@@ -346,4 +377,4 @@ if __name__ == "__main__":
     app = QApplication([])
     mw = MainWindow(ConfigParser())
     mw.show()
-    app.exec()
+    app.exec_()

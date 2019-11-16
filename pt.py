@@ -5,8 +5,7 @@ import os
 import sys
 import configparser
 
-from PyQt5.QtWidgets import QApplication, QDesktopWidget
-from PyQt5.QtGui import QIcon
+from PySide.QtGui import QApplication, QIcon
 
 
 START_DIR = os.getcwd()
@@ -32,41 +31,29 @@ def write_config(c: configparser.ConfigParser, filename=MAIN_CONF_FILE):
     print("Config writen")
 
 
+def set_ui_settings(config):
+    """Set some UI settings (font, style, etc, ...)"""
+    # Style
+    QApplication.setStyle(config.get(APP_MAIN_SECTION, "ui_style", fallback=""))
+    # Font
+    f = QApplication.font()
+    f.setPointSize(config.getint(APP_MAIN_SECTION, "default_font_size", fallback=f.pointSize()))
+    QApplication.setFont(f)
+
+
 if __name__ == "__main__":
     from ui.main import MainWindow
 
     config = read_config(MAIN_CONF_FILE)
-
     app = QApplication(sys.argv)
-    app.setStyle("fusion")
 
-    # Set default app font size
-    f = app.font()
-    f.setPointSize(12)
-    app.setFont(f)
+    # Set some UI settings
+    set_ui_settings(config)
 
-    app.setApplicationDisplayName("PowerTime")
+    app.setApplicationName("PowerTime")
     app.setApplicationVersion(VERSION)
     app.setWindowIcon(QIcon("./res/pt.ico"))
-    desktop: QDesktopWidget = app.desktop()
 
     mw = MainWindow(config)
 
-    # Usb device plug-in/plug-out notify
-    port_notification = None
-    if os.name == "nt":
-        import devices.icsex00a_port_state_notificator_win
-
-        port_notification = devices.icsex00a_port_state_notificator_win.PortStateNotificator()
-    elif os.name == "linux":
-        import devices.icsex00a_port_state_notificator_linux
-
-    # Called when ports (Serial/Parallel/etc...) connected or disconnected
-    def port_state_changed(port, state):
-        print("Port [{}] connected state changed to: {}".format(port, state))
-
-    if port_notification:
-        print("port_notification created")
-        port_notification.state_changed.connect(port_state_changed)
-
-    sys.exit(app.exec())
+    sys.exit(app.exec_())
